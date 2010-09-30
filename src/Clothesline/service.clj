@@ -3,7 +3,7 @@
 (defprotocol service
   "Service objects comform to this spec."
   (resource-exists?       [self request] "Returning non-true results in 404.")
-  (service-avilable?      [self request] "Returning non-true results in 503")
+  (service-available?      [self request] "Returning non-true results in 503")
   (authorized?            [self request] "Returning non-true results in 501 & header specified if auth header")
   (forbidden?             [self request] "Default false, returning true results in 403")
   (allow-missing-post?    [self request] "Default false, should return true if you want to post to empty space")
@@ -75,7 +75,7 @@
  :last-modified (fn [self request] nil)
  :expires (fn [self request] nil)
  :generate-etag (fn [self request] nil)
- :finish-request (fn [self request] true))
+ :finish-request (fn [self request] true)
 })
 
 
