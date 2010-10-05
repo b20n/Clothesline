@@ -82,9 +82,63 @@
               (if chosen-handler
                 {:result true :add-data {:content-provider chosen-handler}}
                 false)))
-    :yes :d4
+    :yes d4
     :no (stop-response 406))
 
+  (defstate d4
+    :test (request-header-exists "accept-language")
+    :yes d5
+    :no e5)
+
+  (defstate d5
+    "Currently ignored. TODO: Fix me!"
+    :test (constantly true)
+    :yes e5
+    :no (stop-response 406))
+
+  (defstate e5
+    :test (request-header-exists "accept-charset")
+    :yes e6
+    :no f6)
+
+  (defstate e6
+    "Check and select a supported character set"
+    :test (fn [handler request data]
+            (let [converters    (s/charsets-provided handler request data)
+                  accept-c      (split-header-field request "accept-charset")]
+              (if (some #{"*"} accept-c)
+                true                    ; Bank out if * is allowed.
+                (if-let [converter (first (keep #(get converters %) accept-c))]
+                  {:result true, :character-converter converter}
+                  false))))
+    :yes f6
+    :no (stop-response 406))
+
+  (defstate f6
+    "Check if accept-encoding header is present"
+    :test (request-header-exists "accept-encoding")
+    :yes f7
+    :no g7)
+
+  (defstate f7
+    :test (fn [handler request data]
+            (let [encoders (s/encodings-provided handler request data)
+                  encode-c (split-header-field request "accept-encoding")]
+              (if (some #{"*"} encode-c)
+                true
+                (if-let [encoder (first keep #(get encoders %) accept-c)]
+                  {:result true, :encoding-converter encoder}
+                  false))))
+    :yes g7
+    :no (stop-response 406))
+
+  (defstate g7
+    :test s/resource-exists?
+    :yes g8
+    :no  h7)
+
+  
+  
 
   (defstate temp-end
     :test (constantly true)

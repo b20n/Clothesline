@@ -1,4 +1,5 @@
-(ns clothesline.protocol.response-helpers)
+(ns clothesline.protocol.response-helpers
+  (:require [clojure.contrib [string :as strs]]))
 
 (defn stop-response
   ([^int code] {:status code :headers {}})
@@ -13,6 +14,15 @@
     (if (get headers header-name)
       true
       false)))
+
+
+(defn split-header-field [request field]
+  (let [headers (or (:headers request) {})
+        field   (headers field)]
+    (if field
+      (strs/split #";" field)
+      (list))))
+
 
 
 

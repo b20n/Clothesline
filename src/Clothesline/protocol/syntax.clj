@@ -10,8 +10,7 @@
 (defmacro defstate [name & forms]
   (let [docstring (reduce str (interpose "\n" (take-while string? forms)))
         rforms    (drop-while string? forms)
-        mname     (with-meta name {:doc docstring :name name
-                                   })]
+        mname     (with-meta name {:doc docstring :name name})]
     `(def ~mname (state ~@rforms))))
 
 (def state-standards
