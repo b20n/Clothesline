@@ -1,14 +1,17 @@
 (ns clothesline.protocol.graph
-  (:use [clothesline.protocol [response-helpers]
-         [syntax]])
+  (:use [clothesline.protocol
+           [response-helpers]
+           [syntax]
+           [graph-helpers]])
   (:require [clothesline [service :as s]]))
 
 ;; Proposed syntax
 
+
 (protocol-machine "v3"
   (defstate b13
     "Check if service has been made unavailable. Return status 503 if not."
-    :test s/service-available?
+    :test (call-on-handler s/service-available?)
     :yes :b12
     :no (stop-response 503))
 
@@ -18,7 +21,7 @@
     :no (stop-response 501))
 
   (defstate b11
-    :test s/uri-too-long?
+    :test (call-on-handler s/uri-too-long?)
     :no :b10
     :yes (stop-response 414))
 
@@ -30,32 +33,34 @@
     :no (stop-response 501))
 
   (defstate b9
-    :test s/malformed-request?
+    :test (call-on-handler  s/malformed-request?)
     :no :b8
     :yes (stop-response 400))
 
+
+  
   (defstate b8
-    :test s/authorized?
+    :test (call-on-handler  s/authorized?)
     :yes :b7
     :no (stop-response 401))
 
   (defstate b7
-    :test s/forbidden?
+    :test (call-on-handler  s/forbidden?)
     :yes (stop-response 403)
     :no  :b6)
 
   (defstate b6
-    :test s/valid-content-headers?
+    :test (call-on-handler  s/valid-content-headers?)
     :yes :b5
     :no (stop-response 501))
 
   (defstate b5
-    :test s/known-content-type?
+    :test (call-on-handler  s/known-content-type?)
     :yes :b4
     :no (stop-response 415))
 
   (defstate b4
-    :test s/valid-entity-length?
+    :test (call-on-handler  s/valid-entity-length?)
     :yes :b3
     :no (stop-response 413))
 
@@ -75,12 +80,14 @@
   
   
   (defstate c4
-    :test (fn [handler request graphdata]
-            (let [acceptv ((request :headers) "accept")
-                  handlers (s/content-types-provided handler request graphdata)
-                  chosen-handler (handlers acceptv)]
-              (if chosen-handler
-                {:result true :add-data {:content-provider chosen-handler}}
+    "Map the accept handler through and set it."
+    :test (fn [{:keys [handler request graphdata]}]
+            (let [available-handlers (s/content-types-provided handler
+                                                               request
+                                                               graphdata)
+                  chosen  (map-accept-header request "accept" available-handlers)]
+              (if chosen
+                {:result true :add-data {:content-type chosen}}
                 false)))
     :yes d4
     :no (stop-response 406))
@@ -98,48 +105,130 @@
 
   (defstate e5
     :test (request-header-exists "accept-charset")
-    :yes e6
+    :yes f6 ; TODO: Re-enable accept-charset!
     :no f6)
 
   (defstate e6
     "Check and select a supported character set"
-    :test (fn [handler request data]
-            (let [converters    (s/charsets-provided handler request data)
-                  accept-c      (split-header-field request "accept-charset")]
-              (if (some #{"*"} accept-c)
-                true                    ; Bank out if * is allowed.
-                (if-let [converter (first (keep #(get converters %) accept-c))]
-                  {:result true, :character-converter converter}
-                  false))))
+    :test (fn [{:keys [handler request graphdata]}]
+            (let [available-handlers (s/charsets-provided handler
+                                                          request
+                                                          graphdata)
+                  chosen  (map-accept-header request "accept-charset" available-handlers)]
+              (if chosen
+                {:result true :add-data {:content-charset chosen}}
+                false)))
     :yes f6
     :no (stop-response 406))
 
   (defstate f6
     "Check if accept-encoding header is present"
     :test (request-header-exists "accept-encoding")
-    :yes f7
+    :yes g7 ; TODO: Re-enable accept-encoding
     :no g7)
 
   (defstate f7
-    :test (fn [handler request data]
-            (let [encoders (s/encodings-provided handler request data)
-                  encode-c (split-header-field request "accept-encoding")]
-              (if (some #{"*"} encode-c)
-                true
-                (if-let [encoder (first keep #(get encoders %) accept-c)]
-                  {:result true, :encoding-converter encoder}
-                  false))))
+    :test (fn [{:keys [handler request graphdata]}]
+            (let [available-handlers (s/charsets-provided handler
+                                                          request
+                                                          graphdata)
+                  chosen  (map-accept-header request "accept-encoding" available-handlers)]
+              (if chosen
+                {:result true :add-data {:content-encoding chosen}}
+                false)))
     :yes g7
     :no (stop-response 406))
 
   (defstate g7
-    :test s/resource-exists?
+    :test (call-on-handler  s/resource-exists?)
     :yes g8
-    :no  h7)
+    :no  :h7)
+
+  ; The graph bifurcates significantly here. Taking the path down
+  ; g8 leads us towards serving a resource. Taking the path down
+  ; h7 leads towards various failure responses.
+
+  ; Resource exists, move towards serving it
+  (defstate g8
+    :test (request-header-exists "if-match")
+    :yes g9
+    :no  :h10)
+
+  (defstate g9
+    :test (fn [_ request _]
+            (let [if-match-value (get (:headers request) "if-match")]
+              (= "*" if-match-value)))
+    :yes h10
+    :no  g11)
+
+  (defstate g11
+    :test (fn [{:keys [request handler graphdata]}]
+            (let [if-match-value (hv request "if-match")
+                  etag (s/generate-etag handler request graphdata)]
+              (= if-match-value etag)))
+    :yes h10
+    :no (stop-response 412))
+
+  (defstate h10
+    :test (request-header-exists "if-unmodified-since")
+                                        ; :yes h11 ; TODO: Re-enable this
+    :yes i12 ; TODO: Un-ignore the date headers.
+    :no i12)
+
+  (defstate i12
+    :test (request-header-exists "if-none-match")
+    :yes i13
+    :no l13)
+
+
+  (defstate i13
+    :test (request-header-is "if-none-match" "*")
+    :yes j18
+    :no k13)
+
+  (defstate k13
+    :test (fn [{:keys [request handler graphdata]}]
+            (= (s/generate-etag handler request graphdata)
+               (hv request "if-none-match")))
+    :yes j18
+    :no l13)
+
+  (defstate j18
+    :test (is-request-method :get)
+    :yes (stop-response 304)
+    :no (stop-response 412))
+
+  (defstate l13
+    :test (request-header-exists "if-modified-since")
+    :yes m16 ; TODO: un-ignore date headers, this should go to L14
+    :no m16)
+
+
+  (defstate m16
+    :test (is-request-method :delete)
+    :no n16
+    :yes m20)
+
+  (defstate m20
+    :test (call-on-handler s/delete-resource)
+    :yes o20
+    :no (stop-response 202))
+
+  (defstate o20
+    :test (fn [{:keys [request handler graphdata]}]
+            (or (:content-provider graphdata)
+                (first (s/content-types-provided handler request graphdata))))
+    :yes o18
+    :no (stop-response 204))
+
+  (defstate o18
+    :test (call-on-handler s/multiple-choices?)
+    :yes (stop-response 300)
+    :no (generate-response 200))
+  
+
 
   
-  
-
   (defstate temp-end
     :test (constantly true)
     :yes :respond
