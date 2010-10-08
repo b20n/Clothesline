@@ -9,6 +9,9 @@
 
 
 (protocol-machine "v3"
+
+  (def start b13)
+                  
   (defstate b13
     "Check if service has been made unavailable. Return status 503 if not."
     :test (call-on-handler s/service-available?)
