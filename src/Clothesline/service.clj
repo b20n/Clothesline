@@ -46,7 +46,7 @@
 (def service-default
 {
  :resource-exists? (fn [self request graphdata] true)
- :service-avilable? (fn [self request graphdata] true)
+ :service-available? (fn [self request graphdata] true)
  :authorized? (fn [self request graphdata] true)
  :forbidden? (fn [self request graphdata] false)
  :allow-missing-post? (fn [self request graphdata] false)

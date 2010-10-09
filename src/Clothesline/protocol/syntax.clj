@@ -2,15 +2,15 @@
   (:use [clojure.contrib.macro-utils]
         [clothesline.protocol [response-helpers]]))
 
-(defmacro protocol-machine [version-handle & forms]
+(defmacro protocol-machine [& forms]
   (let [stateforms (filter #(= (str (first %)) "defstate") forms)
         names      (map #(second %) stateforms)]
     `(do (declare ~@names) ~@forms)))
 
 (defmacro defstate [name & forms]
   (let [docstring (reduce str (interpose "\n" (take-while string? forms)))
-        rforms    (drop-while string? forms)
-        mname     (with-meta name {:doc docstring :name name})]
+        mname     (with-meta name {:doc docstring :name name})
+        rforms    (list* :name (str name) (drop-while string? forms))]
     `(def ~mname (state ~@rforms))))
 
 (def state-standards
@@ -31,23 +31,17 @@
   (assoc map :yes (key->nsvar *graph-namespace* (:yes map))
              :no  (key->nsvar *graph-namespace* (:no map))))
 
-(defn update-data [{:keys [add-data]} data]
-  (merge data add-data))
 
-(defn update-response [{:keys [add-headers
-                               remove-headers
-                               headers
-                               body
-                               status] :as map} response]
-  (-> response
-      (assoc :headers (or headers (:headers response)))
-      (update-in [:headers] #(merge % (or add-headers {})))
-      (update-in [:headers] #(apply dissoc (list* % (or remove-headers []))))
-      (assoc :body (or (:body response) body))
-      (assoc :status (or (:status response) status))))
+(defn update-data [{:keys [headers
+                           annotate]} graphdata]
+  (-> graphdata
+      (update-in [:headers] #(merge % headers))
+      (merge (dissoc annotate :headers))))
 
 (declare gen-test-forms gen-body-forms)
 
+(def *debug-mode-runone* false) ; If set to true, the state doesn't progress, but rather
+                         ; stops immediately with a processing dump.
 (defmacro state [& {:as state-opts}]
   (let [has-body? (:body state-opts)]
     (if-not has-body?
@@ -55,36 +49,37 @@
       (gen-body-forms state-opts))))
 
 (defn- gen-test-forms [state-opts]
-  (let [opts (resolve-states (merge state-standards state-opts))]
+  (let [opts (merge state-standards state-opts)]
     `(fn [& [ {request# :request
                handler# :handler
-               response# :response
                graphdata# :graphdata :as args#}]]
          (let [test# ~(:test opts)
-               test-result# (test# handler# request# graphdata#)
+               test-result# (test# args#)
                result# (or (:result test-result#)
-                           test-result#)
+                                    test-result#)
                plan#   (if result#
                          ~(:yes opts)
                          ~(:no opts))
-               nresponse# (if (map? test-result#)
-                            (update-response test-result# response#)
-                            response#)
                ndata#     (if (map? test-result#)
                             (update-data graphdata# test-result#)
                             graphdata#)
-               forward-args# {:request request#
-                              :handler handler#
-                              :response nresponse#
-                              :graphdata ndata#}]
-           (println "Intermediate: " test-result# " -> " result#) ; For debugging
+               forward-args# (assoc args# :graphdata ndata#)]
+           (println "Intermediate (" ~(:name opts) ")" test-result# " -> " plan#)
+           (println "  :: " forward-args#)
+           (println "  ::: plan "
+                    (if (instance? clojure.lang.IFn plan#) "is" "is not")
+                    "invokable.")
            (cond
-            (map? plan#)   plan# ; If it's a map, return it.
-            (or (instance? clojure.lang.IFn plan#) (var? plan#))
-                (apply plan# (list forward-args#)) ; If it's invokable, invoke it.
-            (keyword? plan#) (list result# plan#) ; For debugging.
-            :default plan#) ; For futureproofing?
-           ))))
+            *debug-mode-runone*
+                           {:test test# :result result# :plan plan# :ndata ndata#}
+            (map? plan#)
+                           plan# ; If it's a map, return it.
+            (or (instance? clojure.lang.IFn plan#))
+                           (do (println "--- Invoking next! ---")
+                               (apply plan# (list forward-args#))) ; If it's invokable, invoke it.
+            :default plan#))
+         )))
+
 
 (defn gen-body-forms [state-opts] (:body state-opts))
 
