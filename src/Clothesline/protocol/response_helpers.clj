@@ -25,6 +25,9 @@
                                        (first (s/content-types-provided handler
                                                                         request
                                                                         graphdata)))
+           body                     (if generator
+                                      (generator request graphdata)
+                                      )
 ;          [encoding     encoder]   (:content-encoding graphdata)
 ;          [charset      converter] (:content-charset  graphdata)
           body (generator request graphdata)
@@ -35,9 +38,7 @@
       {:status code :body body :headers headers})))
 
 
-(defn generate-response [code]
-  (fn [{:keys [handler request graphdata]}]
-    ))
+
 
 (defn hv [request header]
   ((:headers request) header))
