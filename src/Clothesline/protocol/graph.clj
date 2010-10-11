@@ -143,7 +143,7 @@
   (defstate g7
     :test (call-on-handler  s/resource-exists?)
     :yes g8
-    :no  :h7)
+    :no  h7)
 
   ; The graph bifurcates significantly here. Taking the path down
   ; g8 leads us towards serving a resource. Taking the path down
@@ -151,7 +151,7 @@
 
   ; Resource exists, move towards serving it
   (defstate g8
-    :test (request-header-exists "if-match")
+    :test (request-header-exists? "if-match")
     :yes g9
     :no  h10)
 
@@ -195,7 +195,7 @@
     :no l13)
 
   (defstate j18
-    :test (is-request-method :get)
+    :test (is-request-method? :get)
     :yes (stop-response 304)
     :no (stop-response 412))
 
@@ -218,14 +218,14 @@
   (defstate o20
     :test (fn [{:keys [request handler graphdata]}]
             (or (:content-provider graphdata)
-                (first (s/content-types-provided handler request graphdata))))
+                (:body graphdata)))
     :yes o18
     :no (stop-response 204))
 
   (defstate o18
     :test (call-on-handler s/multiple-choices?)
     :yes (stop-response 300)
-    :no identity)
+    :no (generate-response 200))
   
   (defstate n16
     :test (is-request-method? :post)
@@ -237,6 +237,45 @@
     :yes 'o14
     :no o18)
 
+  ;; Back up to failure states
+
+  (defstate h7
+    :test (request-header-is? "if-match" "*")
+    :yes (stop-response 412)
+    :no  i7)
+
+  (defstate i7
+    :test (is-request-method? :put)
+    :yes i4
+    :no k7)
+
+  (defstate k7
+    :test (call-on-handler s/previously-existed?)
+    :yes k5
+    :no l7)
+
+  (defstate k5
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (generate-response 301)
+    :no l5)
+
+  (defstate i4
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (generate-response 301)
+    :no p3)
+
+  (defstate l5
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-temporarily? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (generate-response 307)
+    :no l5)
+  
+  
   
   (defstate temp-end
     :test (constantly true)

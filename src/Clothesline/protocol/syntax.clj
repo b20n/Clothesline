@@ -33,7 +33,8 @@
 
 
 (defn update-data [{:keys [headers
-                           annotate]} graphdata]
+                           annotate
+                           body]} graphdata]
   (-> graphdata
       (update-in [:headers] #(merge % headers))
       (merge (dissoc annotate :headers))))
