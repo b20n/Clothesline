@@ -4,8 +4,6 @@
                               graph-helpers])
   (:require [clothesline [service :as s]]))
 
-;; Proposed syntax
-
 
 (protocol-machine
  
@@ -225,7 +223,8 @@
   (defstate o18
     :test (call-on-handler s/multiple-choices?)
     :yes (stop-response 300)
-    :no (generate-response 200))
+    :no  (normal-response 200)
+    )
   
   (defstate n16
     :test (is-request-method? :post)
@@ -258,24 +257,57 @@
     :test (fn [{:keys [handler request graphdata]}]
             (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
               {:result true :headers {"Location", redirect-to}}))
-    :yes (generate-response 301)
+    :yes (normal-response 301)
     :no l5)
 
   (defstate i4
     :test (fn [{:keys [handler request graphdata]}]
             (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
               {:result true :headers {"Location", redirect-to}}))
-    :yes (generate-response 301)
+    :yes (normal-response 301)
     :no p3)
 
   (defstate l5
     :test (fn [{:keys [handler request graphdata]}]
             (when-let [redirect-to (s/moved-temporarily? handler request graphdata)]
               {:result true :headers {"Location", redirect-to}}))
-    :yes (generate-response 307)
-    :no l5)
+    :yes (normal-response 307)
+    :no m5)
+
+  (defstate l7
+    :test (is-request-method? :post)
+    :no (stop-response 404)
+    :yes m7)
+
+  (defstate m7
+    :test (call-on-handler s/allow-missing-post?)
+    :yes n11
+    :no (stop-response 404))
+
+  (defstate m5
+    :test (is-request-method? :post)
+    :no (stop-response 410)
+    :yes n5) ; Identical to m7
+
+  (defstate n5
+    :test (call-on-handler s/allow-missing-post?)
+    :no (stop-response 410)
+    :yes n11)
   
-  
+  (defstate n11
+    ; TODO, fix this so it does what it's supposed to.
+    :test (fn [{:keys [handler request graphdata]}]
+            (let [is-redirect false]
+              (if (s/post-is-create? handler request graphdata)
+                (let [cpath (s/create-path handler request graphdata)]
+                  false)
+                (do (s/process-post handler request graphdata)
+                    false))))
+    :yes (normal-response 303)
+    :no p11)
+
+  (defstate p11
+    :test )
   
   (defstate temp-end
     :test (constantly true)
