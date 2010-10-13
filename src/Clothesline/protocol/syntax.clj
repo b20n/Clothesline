@@ -61,10 +61,13 @@
                plan#   (if result#
                          ~(:yes opts)
                          ~(:no opts))
+               nreq#    (if (and (map? test-result#) (contains? test-result# :update-request))
+                          (merge request# (:update-request test-result#))
+                          request#)
                ndata#     (if (map? test-result#)
                             (update-data graphdata# test-result#)
                             graphdata#)
-               forward-args# (assoc args# :graphdata ndata#)]
+               forward-args# (assoc args# :graphdata ndata# :request nreq#)]
            (println "Intermediate (" ~(:name opts) ")" test-result# " -> " plan#)
            (println "  :: " forward-args#)
            (println "  ::: plan "
@@ -72,7 +75,7 @@
                     "invokable.")
            (cond
             *debug-mode-runone*
-                           {:test test# :result result# :plan plan# :ndata ndata#}
+                           forward-args#
             (map? plan#)
                            plan# ; If it's a map, return it.
             (or (instance? clojure.lang.IFn plan#))

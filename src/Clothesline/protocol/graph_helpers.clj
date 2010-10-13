@@ -1,5 +1,5 @@
 (ns clothesline.protocol.graph-helpers
-  (:use (clothesline.protocol.response-helpers)))
+  (:require (clothesline.protocol [response-helpers :as helper])))
 
 ;; Syntax helpers
 
@@ -10,7 +10,7 @@
       true
       false)))
 
-(defmacro graphdata-item-exists
+(defmacro graphdata-item-exists?
   [kwd-name]
   `(fn [{graphdata# :graphdata}]
      (contains? graphdata# ~kwd-name)))
@@ -30,8 +30,7 @@
          data#    :graphdata}]
      (apply ~protocol-method (list handler# request# data#))))
 
-
-
-
+(defmacro normal-response [^int code]
+  `(partial helper/generate-response ~code ))
 
 

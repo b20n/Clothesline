@@ -11,31 +11,47 @@
   ([^int code headers] {:status code :headers headers})
   ([^int code headers msg] {:status code :headers headers :body msg}))
 
-(defn generate-response2 [code]
-  (fn [{:keys [handler request graphdata] :as obs}]
-    (println "Hargor!")))
 
 
+(defn build-body [handler request graphdata]
+  (if (:body graphdata)
+    ;; Explicit bodies always get added.
+    [(:content-type graphdata) (:body graphdata)]
+    (if (#{:get :head} (:request-method request))
+      ;; It's a head or get, so we want to build a body explicitly.
+      (let [[content-type generator] (or (:content-provider graphdata)
+                                         (first (s/content-types-provided handler
+                                                                          request
+                                                                          graphdata)))
+            body                     (if generator
+                                       (generator request graphdata)
+                                       "")]
+        [content-type body]))))
+
+(defn assoc-if
+  ([col key value test]
+      (if test
+        (assoc col key value)
+        col))
+  ([col key value] (assoc-if col key value value)))
+
+(defn build-headers [handler request graphdata [content-type body]]
+  (if (#{:get :head} (:request-method request))
+    (-> {}
+        (assoc-if "Content-Type" content-type)
+        (assoc-if "Content-Length" (count body) body)
+        (assoc-if "ETag" (s/generate-etag handler request graphdata))
+        (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
+        (assoc-if "Expires" (s/expires handler request graphdata)))
+    {}))
+
+  
 ; For some reason, this isn't working. But it's _really close_
-(defn generate-response [code]
-  (println "Burp!")
-  (fn [{:keys [handler request graphdata]}]
-    (println "Entering Hargor!")
-    (let [[content-type generator] (or (:content-provider graphdata)
-                                       (first (s/content-types-provided handler
-                                                                        request
-                                                                        graphdata)))
-           body                     (if generator
-                                      (generator request graphdata)
-                                      )
-;          [encoding     encoder]   (:content-encoding graphdata)
-;          [charset      converter] (:content-charset  graphdata)
-          body (generator request graphdata)
-          default-headers {"Content-Length" (count body)
-                           "Content-Type" content-type }
-          headers (merge {} default-headers (:headers graphdata))]
-      (println "FINAL STATE!")
-      {:status code :body body :headers headers})))
+(defn generate-response [code {:keys [handler request graphdata]}]
+  (let [[content-type body] (build-body handler request graphdata)
+        default-headers (build-headers handler request graphdata body)
+        headers (merge {} default-headers (:headers graphdata))]
+    {:status code :body body :headers headers}))
 
 
 
