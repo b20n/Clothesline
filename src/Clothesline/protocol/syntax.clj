@@ -4,7 +4,7 @@
 
 (defmacro protocol-machine [& forms]
   (let [stateforms (filter #(= (str (first %)) "defstate") forms)
-        names      (map #(second %) stateforms)]
+        names      (map second stateforms)]
     `(do (declare ~@names) ~@forms)))
 
 (defmacro defstate [name & forms]

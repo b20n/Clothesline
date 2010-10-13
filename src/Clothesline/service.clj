@@ -27,7 +27,7 @@
                                                     returns true. The Path returned should be a valid URI part following the
                                                     dispatcher prefix. That Path will replace the previous one in the return
                                                     value of wrq:disp_path(ReqData) for all subsequent resource function calls
-                                                    in the course of this request.)"
+                                                    in the course of this request.")
   (process-post           [self request graphdata] "Default false. Return true if post is handled correcly, or false otherwise.")
   (content-types-provided [self request graphdata] "Default to {}. Should provide content-type (as string) to fn(request,data) mapping.")
   (content-types-accepted [self request graphdata] "Default to {}. Should provide content-type (as string) to fn(request) mapping for accepted types.")

@@ -193,7 +193,7 @@
     :no l13)
 
   (defstate j18
-    :test (is-request-method? :get)
+    :test (request-method-is? :get)
     :yes (stop-response 304)
     :no (stop-response 412))
 
@@ -204,7 +204,7 @@
 
 
   (defstate m16
-    :test (is-request-method? :delete)
+    :test (request-method-is? :delete)
     :no  n16
     :yes m20)
 
@@ -227,14 +227,19 @@
     )
   
   (defstate n16
-    :test (is-request-method? :post)
-    :yes 'n11
+    :test (request-method-is? :post)
+    :yes n11
     :no o16)
 
   (defstate o16
-    :test (is-request-method? :put)
-    :yes 'o14
+    :test (request-method-is? :put)
+    :yes o14
     :no o18)
+
+  (defstate o14
+    :test (call-on-handler s/conflict?)
+    :yes (stop-response 409)
+    :no  p11)
 
   ;; Back up to failure states
 
@@ -244,7 +249,7 @@
     :no  i7)
 
   (defstate i7
-    :test (is-request-method? :put)
+    :test (request-method-is? :put)
     :yes i4
     :no k7)
 
@@ -275,7 +280,7 @@
     :no m5)
 
   (defstate l7
-    :test (is-request-method? :post)
+    :test (request-method-is? :post)
     :no (stop-response 404)
     :yes m7)
 
@@ -285,7 +290,7 @@
     :no (stop-response 404))
 
   (defstate m5
-    :test (is-request-method? :post)
+    :test (request-method-is? :post)
     :no (stop-response 410)
     :yes n5) ; Identical to m7
 
@@ -307,7 +312,15 @@
     :no p11)
 
   (defstate p11
-    :test )
+    :test (response-header-set? "Location")
+    :yes (normal-response 201)
+    :no  o20)
+
+  (defstate p3
+    :test (call-on-handler s/conflict?)
+    :yes (stop-response 409)
+    :no p11)
+  
   
   (defstate temp-end
     :test (constantly true)

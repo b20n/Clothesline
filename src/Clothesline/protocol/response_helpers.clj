@@ -1,10 +1,9 @@
 (ns clothesline.protocol.response-helpers
   (:require [clojure.contrib [string :as strs]]
-            [clothesline [service :as s]]))
+            [clothesline [service :as s]])
+  (:use     [clothesline [util :only [assoc-if get-with-key]]]))
 
-(defn get-with-key [map key]
-  (when-let [v (get map key)]
-    [key v]))
+
 
 (defn stop-response
   ([^int code] {:status code :headers {}})
@@ -27,13 +26,6 @@
                                        (generator request graphdata)
                                        "")]
         [content-type body]))))
-
-(defn assoc-if
-  ([col key value test]
-      (if test
-        (assoc col key value)
-        col))
-  ([col key value] (assoc-if col key value value)))
 
 (defn build-headers [handler request graphdata [content-type body]]
   (if (#{:get :head} (:request-method request))
