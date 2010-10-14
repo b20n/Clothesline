@@ -22,8 +22,6 @@
   "Slim little shim for getting the route and doing something with it"
   ;; er, I think (from this gist https://gist.github.com/3085f7636f6be32b2ef4)
   ;; that this is how it should actually be called. Yes?
-  ;; ... also ... couldn't think of a better way to pass the route map
-  ;; but I'm sure a global is *not* it
   (g/start {:handler (get-route routes req) 
             :request req 
             :graphdata {}}))
