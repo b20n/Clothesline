@@ -9,23 +9,24 @@
    a URL path as the key and a ref to a service implementation as the value"
   (def routes route-map))
 
-(defn no-handler-found [req graph-data]
+(defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
   (-> (response "Not found")
       (status 404)))
 
 (defn get-route
   "Selects the appropriate place to route the request based on the supplied map"
-  ([route-map req default]
-    (let [[route fun] (first (filter #(route-matches (first %) req) route-map))]
-      (or fun default)))
-  ([route-map req] (get-route route-map req no-handler-found)))
+  ([route-map req]
+    (let [[route fun] (first (filter #(route-matches (first %) req) route-map))])))
 
 (defn handler [req]
   "Slim little shim for getting the route and doing something with it"
-  ;; er, I think (from this gist https://gist.github.com/3085f7636f6be32b2ef4)
-  ;; that this is how it should actually be called. Yes?
-  (g/start {:handler (get-route routes req) 
-            :request req 
-            :graphdata {}}))
+  (let [route (get-route routes req)]
+    ;; er, I think (from this gist https://gist.github.com/3085f7636f6be32b2ef4)
+    ;; that this is how it should actually be called. Yes?
+    (if route 
+      (g/start {:handler route 
+                :request req 
+               :graphdata {}})
+      (no-handler-found req))))
 
