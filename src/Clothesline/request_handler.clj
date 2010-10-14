@@ -1,8 +1,10 @@
 (ns clothesline.request_handler
   (:use ring.util.response
         ring.adapter.jetty
-        clout.core)
-  (:require [clothesline.protocol (graph :as g)]))
+        clout.core
+        [clothesline.protocol (graph :as g)]))
+
+(defn set-routes [route-map] (def routes route-map))
 
 (defn no-handler-found [req graph-data]
   "Returns a 404 when no appropriate handler was found"
@@ -22,7 +24,7 @@
   ;; that this is how it should actually be called. Yes?
   ;; ... also ... couldn't think of a better way to pass the route map
   ;; but I'm sure a global is *not* it
-  (g/start {:handler (get-route *routes* req) 
+  (g/start {:handler (get-route routes req) 
             :request req 
             :graphdata {}}))
 
