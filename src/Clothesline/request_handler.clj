@@ -18,4 +18,8 @@
 
 (defn handler [req]
   "Slim little shim for getting the route and doing something with it"
-  (g/start (get-route *routes* req) req {}))
+  ;; er, I think (from this gist https://gist.github.com/3085f7636f6be32b2ef4)
+  ;; that this is how it should actually be called. Yes?
+  (g/start {:handler (get-route *routes* req) 
+            :request req 
+            :graphdata {}))
