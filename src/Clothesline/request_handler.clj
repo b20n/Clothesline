@@ -1,4 +1,4 @@
-(ns clothesline.request_handler
+(ns clothesline.request-handler
   (:use ring.util.response
         ring.adapter.jetty
         clout.core
