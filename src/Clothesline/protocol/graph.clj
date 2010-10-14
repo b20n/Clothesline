@@ -4,8 +4,6 @@
                               graph-helpers])
   (:require [clothesline [service :as s]]))
 
-;; Proposed syntax
-
 
 (protocol-machine
  
@@ -143,7 +141,7 @@
   (defstate g7
     :test (call-on-handler  s/resource-exists?)
     :yes g8
-    :no  :h7)
+    :no  h7)
 
   ; The graph bifurcates significantly here. Taking the path down
   ; g8 leads us towards serving a resource. Taking the path down
@@ -151,7 +149,7 @@
 
   ; Resource exists, move towards serving it
   (defstate g8
-    :test (request-header-exists "if-match")
+    :test (request-header-exists? "if-match")
     :yes g9
     :no  h10)
 
@@ -195,7 +193,7 @@
     :no l13)
 
   (defstate j18
-    :test (is-request-method :get)
+    :test (request-method-is? :get)
     :yes (stop-response 304)
     :no (stop-response 412))
 
@@ -206,7 +204,7 @@
 
 
   (defstate m16
-    :test (is-request-method? :delete)
+    :test (request-method-is? :delete)
     :no  n16
     :yes m20)
 
@@ -218,25 +216,111 @@
   (defstate o20
     :test (fn [{:keys [request handler graphdata]}]
             (or (:content-provider graphdata)
-                (first (s/content-types-provided handler request graphdata))))
+                (:body graphdata)))
     :yes o18
     :no (stop-response 204))
 
   (defstate o18
     :test (call-on-handler s/multiple-choices?)
     :yes (stop-response 300)
-    :no identity)
+    :no  (normal-response 200)
+    )
   
   (defstate n16
-    :test (is-request-method? :post)
-    :yes 'n11
+    :test (request-method-is? :post)
+    :yes n11
     :no o16)
 
   (defstate o16
-    :test (is-request-method? :put)
-    :yes 'o14
+    :test (request-method-is? :put)
+    :yes o14
     :no o18)
 
+  (defstate o14
+    :test (call-on-handler s/conflict?)
+    :yes (stop-response 409)
+    :no  p11)
+
+  ;; Back up to failure states
+
+  (defstate h7
+    :test (request-header-is? "if-match" "*")
+    :yes (stop-response 412)
+    :no  i7)
+
+  (defstate i7
+    :test (request-method-is? :put)
+    :yes i4
+    :no k7)
+
+  (defstate k7
+    :test (call-on-handler s/previously-existed?)
+    :yes k5
+    :no l7)
+
+  (defstate k5
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (normal-response 301)
+    :no l5)
+
+  (defstate i4
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (normal-response 301)
+    :no p3)
+
+  (defstate l5
+    :test (fn [{:keys [handler request graphdata]}]
+            (when-let [redirect-to (s/moved-temporarily? handler request graphdata)]
+              {:result true :headers {"Location", redirect-to}}))
+    :yes (normal-response 307)
+    :no m5)
+
+  (defstate l7
+    :test (request-method-is? :post)
+    :no (stop-response 404)
+    :yes m7)
+
+  (defstate m7
+    :test (call-on-handler s/allow-missing-post?)
+    :yes n11
+    :no (stop-response 404))
+
+  (defstate m5
+    :test (request-method-is? :post)
+    :no (stop-response 410)
+    :yes n5) ; Identical to m7
+
+  (defstate n5
+    :test (call-on-handler s/allow-missing-post?)
+    :no (stop-response 410)
+    :yes n11)
+  
+  (defstate n11
+    ; TODO, fix this so it does what it's supposed to.
+    :test (fn [{:keys [handler request graphdata]}]
+            (let [is-redirect false]
+              (if (s/post-is-create? handler request graphdata)
+                (let [cpath (s/create-path handler request graphdata)]
+                  false)
+                (do (s/process-post handler request graphdata)
+                    false))))
+    :yes (normal-response 303)
+    :no p11)
+
+  (defstate p11
+    :test (response-header-set? "Location")
+    :yes (normal-response 201)
+    :no  o20)
+
+  (defstate p3
+    :test (call-on-handler s/conflict?)
+    :yes (stop-response 409)
+    :no p11)
+  
   
   (defstate temp-end
     :test (constantly true)

@@ -22,11 +22,12 @@
                                           this function should return true. If it does return true, then create_path will be called
                                           and the rest of the request will be treated much like a PUT to the Path entry returned
                                           by that call.")
-  (create-path            [self request graphdata] "Default to false. If POST requests should be treated as a request to put content into a
-                                          (potentially new) resource as opposed to being a generic submission for processing, then
-                                          this function should return true. If it does return true, then create_path will be called
-                                          and the rest of the request will be treated much like a PUT to the Path entry returned by
-                                          that call.")
+  (create-path            [self request graphdata] "This will be called on a POST request if post_is_create returns true.
+                                                    It is an error for this function to not produce a Path if post_is_create
+                                                    returns true. The Path returned should be a valid URI part following the
+                                                    dispatcher prefix. That Path will replace the previous one in the return
+                                                    value of wrq:disp_path(ReqData) for all subsequent resource function calls
+                                                    in the course of this request.")
   (process-post           [self request graphdata] "Default false. Return true if post is handled correcly, or false otherwise.")
   (content-types-provided [self request graphdata] "Default to {}. Should provide content-type (as string) to fn(request,data) mapping.")
   (content-types-accepted [self request graphdata] "Default to {}. Should provide content-type (as string) to fn(request) mapping for accepted types.")

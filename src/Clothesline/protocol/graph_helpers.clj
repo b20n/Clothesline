@@ -1,16 +1,20 @@
 (ns clothesline.protocol.graph-helpers
-  (:use (clothesline.protocol.response-helpers)))
+  (:require [clojure.contrib [string :as strs]]
+            [clothesline.protocol [response-helpers :as helper]]))
 
 ;; Syntax helpers
 
 (defmacro request-header-exists?
   [header-name]
   `(fn [{{headers# :headers} :request}]
-    (if (get headers# ~header-name)
-      true
-      false)))
+     (contains? headers# ~header-name)))
 
-(defmacro graphdata-item-exists
+(defmacro response-header-set?
+  [header-name]
+  `(fn [{{headers# :headers} :request}]
+     (contains? headers# ~header-name)))
+
+(defmacro graphdata-item-exists?
   [kwd-name]
   `(fn [{graphdata# :graphdata}]
      (contains? graphdata# ~kwd-name)))
@@ -20,7 +24,7 @@
      (let [hv# (get headers# ~header-name)]
        (= hv# ~value-str))))
 
-(defmacro is-request-method? [req-symbol]
+(defmacro request-method-is? [req-symbol]
   `(fn [{{request-method# :request-method} :request}]
      (= ~req-symbol request-method#)))
 
@@ -30,8 +34,7 @@
          data#    :graphdata}]
      (apply ~protocol-method (list handler# request# data#))))
 
-
-
-
+(defmacro normal-response [^int code]
+  `(partial helper/generate-response ~code))
 
 
