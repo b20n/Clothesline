@@ -17,7 +17,8 @@
 (defn get-route
   "Selects the appropriate place to route the request based on the supplied map"
   ([route-map req]
-    (let [[route fun] (first (filter #(route-matches (first %) req) route-map))])))
+    (let [[route fun] (first (filter #(route-matches (first %) req) route-map))]
+    (fun))))
 
 (defn handler [req]
   "Slim little shim for getting the route and doing something with it"
