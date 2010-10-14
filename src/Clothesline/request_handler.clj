@@ -4,7 +4,10 @@
         clout.core
         [clothesline.protocol (graph :as g)]))
 
-(defn set-routes [route-map] (def routes route-map))
+(defn set-routes [route-map] 
+  "Set the route map to be used by the handler. This should take the form of
+   a URL path as the key and a ref to a service implementation as the value"
+  (def routes route-map))
 
 (defn no-handler-found [req graph-data]
   "Returns a 404 when no appropriate handler was found"
