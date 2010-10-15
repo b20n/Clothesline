@@ -20,17 +20,6 @@
       :yes (stop-response 500)
       })
 
-(def *graph-namespace* 'clothesline.protocol.graph)
-(defn- key->sym [keyword] (symbol (name keyword)))
-(defn- key->nsvar [ns keyword] (if (keyword? keyword)
-                                 (or (ns-resolve ns (key->sym keyword)) keyword)
-                                 keyword))
-
-
-(defn resolve-states [map] 
-  (assoc map :yes (key->nsvar *graph-namespace* (:yes map))
-             :no  (key->nsvar *graph-namespace* (:no map))))
-
 
 (defn update-data [{:keys [headers
                            annotate
