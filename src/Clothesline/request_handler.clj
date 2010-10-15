@@ -13,7 +13,8 @@
 
 (defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
-  (-> (response "Not found")
+  (-> (response "404 - Resource Not found")
+      (content-type "text-plain")
       (status 404)))
 
 (defn get-route [route-map req]
@@ -27,7 +28,7 @@
     ;; that this is how it should actually be called. Yes?
     (if route 
       (wrap-params (g/start {:handler route 
-                            :request req 
-                            :graphdata {}}))
+                             :request req 
+                             :graphdata {}}))
       (no-handler-found req))))
 
