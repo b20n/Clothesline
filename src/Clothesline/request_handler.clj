@@ -23,8 +23,11 @@
 
 (defn handler [req]
   "Slim little shim for getting the route and doing something with it"
-  (let [route (get-route @*routes* req)]
+  (let [[path route ] (get-route @*routes* req)]
+    (println "Handler is firing. Route is: " route)
     (if route 
-      (wrap-params (g/start route req {}))
+      (g/start {:handler route
+                :request req
+                :graphdata {}})
       (no-handler-found req))))
 
