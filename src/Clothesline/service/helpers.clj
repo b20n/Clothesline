@@ -12,8 +12,10 @@
 
 
 (defmacro defsimplehandler [name & ct-generator-forms]
-  `(do
-     (deftype ~name [])
-     (extend ~name service/service
-             (merge service/service-default
-                    {:content-types-provided (hash-map ~@ct-generator-forms)}))))
+  (let [typename (symbol (str name "-type"))]
+    `(do
+       (deftype ~typename [])
+       (extend ~typename service/service
+               (merge service/service-default
+                      {:content-types-provided (hash-map ~@ct-generator-forms)}))
+       (def ~name (new ~typename)))))
