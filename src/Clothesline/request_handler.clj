@@ -25,6 +25,6 @@
   "Slim little shim for getting the route and doing something with it"
   (let [route (get-route @*routes* req)]
     (if route 
-      (wrap-params (g/start route req {}
-      (no-handler-found req))))))
+      (wrap-params (g/start route req {}))
+      (no-handler-found req))))
 
