@@ -1,7 +1,7 @@
 (ns clothesline.protocol.response-helpers
   (:require [clojure.contrib [string :as strs]]
             [clothesline [service :as s]])
-  (:use     [clothesline [util :only [assoc-if get-with-key]]]))
+  (:use     [clothesline [util :only [assoc-if get-with-key take-until]]]))
 
 
 
@@ -31,11 +31,11 @@
         encoding-str (when enc (str "; encoding:" enc))]
     (str content-type-str encoding-str)))
 
-(defn build-headers [handler request graphdata [content-type body]]
+(defn build-headers [handler request graphdata content-type body]
   (if (#{:get :head} (:request-method request))
     (-> {}
         (assoc-if "Content-Type" (create-ct-header content-type graphdata) content-type)
-        (assoc-if "Content-Length" (count body) body)
+        (assoc-if "Content-Length" (str (count body)) body)
         (assoc-if "ETag" (s/generate-etag handler request graphdata))
         (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
         (assoc-if "Expires" (s/expires handler request graphdata)))
@@ -45,10 +45,12 @@
 ; For some reason, this isn't working. But it's _really close_
 (defn generate-response [code {:keys [handler request graphdata]}]
   (let [[content-type body] (build-body handler request graphdata)
-        default-headers (build-headers handler request graphdata body)
+        default-headers (build-headers handler request graphdata content-type body)
         headers (merge {} default-headers (:headers graphdata))
-        final-body (when-not (= :head (:request-method request)))]
-    {:status code :body final-body :headers headers}))
+        final-body (when-not (= :head (:request-method request)) body)]
+    (let [x {:status code :body final-body :headers headers}]
+      (println "Final response: " x)    ; TODO: Remove
+      x)))
 
 
 
@@ -56,11 +58,14 @@
 (defn hv [request header]
   ((:headers request) header))
 
+(defn purge-str-semicolon [astring]
+  (apply str (take-until #(= \; %) astring)))
+
 (defn split-header-field [request field]
   (let [headers (or (:headers request) {})
         field   (headers field)]
     (if field
-      (strs/split #";" field)
+      (map purge-str-semicolon (strs/split #"," field))
       (list))))
 
 (defn push-header-through [request field map]
@@ -69,6 +74,7 @@
 
 (defn map-accept-header
   ([request field map with-default?]
+     (println "-- map accept header --")
      (or (first (push-header-through request field map))
          (or  (get-with-key map "*/*") (get-with-key map "*"))
          (and with-default? (first map))))

@@ -17,5 +17,5 @@
        (deftype ~typename [])
        (extend ~typename service/service
                (merge service/service-default
-                      {:content-types-provided (hash-map ~@ct-generator-forms)}))
+                      {:content-types-provided (fn [handler# request# graphdata#] (hash-map ~@ct-generator-forms))}))
        (def ~name (new ~typename)))))

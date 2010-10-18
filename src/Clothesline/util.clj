@@ -4,6 +4,9 @@
   (when-let [v (get map key)]
     [key v]))
 
+(defn take-until [pred col]
+  (take-while #(not (pred %)) col))
+
 (defn assoc-if
   ([col key value test]
       (if test
