@@ -1,4 +1,3 @@
-
 (ns clothesline.protocol.graph
   (:use [clothesline.protocol response-helpers
                               syntax
@@ -82,12 +81,10 @@
   (defstate c4
     "Map the accept handler through and set it."
     :test (fn [{:keys [handler request graphdata]}]
-            (println "--- c4 ---")
             (let [available-handlers (s/content-types-provided handler
                                                                request
                                                                graphdata)
                   chosen  (map-accept-header request "accept" available-handlers)]
-              (println "--- c42 ---")
               (if chosen
                 {:result true :annotate {:content-handler chosen}}
                 false)))

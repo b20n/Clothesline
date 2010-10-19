@@ -54,7 +54,7 @@
                           (merge request# (:update-request test-result#))
                           request#)
                ndata#     (if (map? test-result#)
-                            (update-data graphdata# test-result#)
+                            (update-data test-result# graphdata#)
                             graphdata#)
                forward-args# (assoc args# :graphdata ndata# :request nreq#)]
            (println "Intermediate (" ~(:name opts) ")" test-result# " -> " plan#)

@@ -3,8 +3,9 @@
         ring.adapter.jetty)
   (:require [clothesline [request-handler :as rh]]))
 
-(defsimplehandler bogus "text/html"
-  (fn [req data] "<h1>Fu!</h1>"))
+(defsimplehandler bogus
+  "text/plain" (fn [req data] "Fu!")
+  "text/html" (fn [req data] "<h1>Fu!</h1>"))
 
 (rh/set-routes { "/" bogus })
 

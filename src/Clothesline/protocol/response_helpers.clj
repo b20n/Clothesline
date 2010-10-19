@@ -4,6 +4,33 @@
   (:use     [clothesline [util :only [assoc-if get-with-key take-until]]]))
 
 
+;; Response Handler Helpers
+
+(defn hv [request header]
+  ((:headers request) header))
+
+(defn purge-str-semicolon [astring]
+  (first (strs/split #";" astring)))
+
+(defn split-header-field [request field]
+  (let [headers (or (:headers request) {})
+        field   (headers field)]
+    (if field
+      (map purge-str-semicolon (strs/split #"," field))
+      (list))))
+
+(defn push-header-through [request field map]
+  (let [split-header (split-header-field request field)]
+    (keep #(when-let [v (get map %)] [% v]) split-header)))
+
+(defn map-accept-header
+  ([request field map with-default?]
+     (or (first (push-header-through request field map))
+         (or  (get-with-key map "*/*") (get-with-key map "*"))
+         (and with-default? (first map))))
+  ([request field map] (map-accept-header request field map true)))
+
+;; Response builders
 
 (defn stop-response
   ([^int code] {:status code :headers {}})
@@ -14,10 +41,10 @@
 (defn build-body [handler request graphdata]
   (if (:body graphdata)
     ;; Explicit bodies always get added.
-    [(:content-type graphdata) (:body graphdata)]
+    [(or (:content-type graphdata) "text/plain") (:body graphdata)]
     (if (#{:get :head} (:request-method request))
       ;; It's a head or get, so we want to build a body explicitly.
-      (let [[content-type generator] (or (:content-provider graphdata)
+      (let [[content-type generator] (or (:content-handler graphdata)
                                          (first (s/content-types-provided handler
                                                                           request
                                                                           graphdata)))
@@ -27,8 +54,8 @@
         [content-type body]))))
 
 (defn create-ct-header [content-type-str graphdata]
-  (let [[enc encr] (:content-encoding graphdata)
-        encoding-str (when enc (str "; encoding:" enc))]
+  (let [[enc encr] (:content-charset graphdata)
+        encoding-str (when enc (str "; charset" enc))]
     (str content-type-str encoding-str)))
 
 (defn build-headers [handler request graphdata content-type body]
@@ -48,34 +75,8 @@
         default-headers (build-headers handler request graphdata content-type body)
         headers (merge {} default-headers (:headers graphdata))
         final-body (when-not (= :head (:request-method request)) body)]
-    (let [x {:status code :body final-body :headers headers}]
-      (println "Final response: " x)    ; TODO: Remove
-      x)))
+    {:status code :body final-body :headers headers}))
 
 
 
 
-(defn hv [request header]
-  ((:headers request) header))
-
-(defn purge-str-semicolon [astring]
-  (apply str (take-until #(= \; %) astring)))
-
-(defn split-header-field [request field]
-  (let [headers (or (:headers request) {})
-        field   (headers field)]
-    (if field
-      (map purge-str-semicolon (strs/split #"," field))
-      (list))))
-
-(defn push-header-through [request field map]
-  (let [split-header (split-header-field request field)]
-    (keep #(when-let [v (get map %)] [% v]) split-header)))
-
-(defn map-accept-header
-  ([request field map with-default?]
-     (println "-- map accept header --")
-     (or (first (push-header-through request field map))
-         (or  (get-with-key map "*/*") (get-with-key map "*"))
-         (and with-default? (first map))))
-  ([request field map] (map-accept-header request field map true)))
