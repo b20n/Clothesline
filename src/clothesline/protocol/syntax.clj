@@ -57,18 +57,16 @@
                             (update-data test-result# graphdata#)
                             graphdata#)
                forward-args# (assoc args# :graphdata ndata# :request nreq#)]
-           (println "Intermediate (" ~(:name opts) ")" test-result# " -> " plan#)
+           (println "Intermediate (" ~(:name opts) ")" test-result#)
            (println "  :: " forward-args#)
-           (println "  ::: plan "
-                    (if (instance? clojure.lang.IFn plan#) "is" "is not")
-                    "invokable.")
            (cond
             *debug-mode-runone*
                            forward-args#
             (map? plan#)
                            plan# ; If it's a map, return it.
             (or (instance? clojure.lang.IFn plan#))
-                           (do (println "--- Invoking next! ---")
+                           (do
+                               (println "--- Invoking next! ---")
                                (apply plan# (list forward-args#))) ; If it's invokable, invoke it.
             :default plan#))
          )))

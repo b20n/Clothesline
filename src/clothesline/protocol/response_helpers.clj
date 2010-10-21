@@ -58,15 +58,26 @@
         encoding-str (when enc (str "; charset" enc))]
     (str content-type-str encoding-str)))
 
-(defn build-headers [handler request graphdata content-type body]
-  (if (#{:get :head} (:request-method request))
-    (-> {}
+(defn build-headers [handler
+                     {method :request-method :as request}
+                     graphdata
+                     content-type
+                     body]
+  (cond
+   (= :get method)
+     (-> {}
         (assoc-if "Content-Type" (create-ct-header content-type graphdata) content-type)
         (assoc-if "Content-Length" (str (count body)) body)
         (assoc-if "ETag" (s/generate-etag handler request graphdata))
         (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
         (assoc-if "Expires" (s/expires handler request graphdata)))
-    {}))
+   (= :head method)
+     (-> {}
+       (assoc-if "Content-Type" (create-ct-header content-type graphdata) content-type)
+       (assoc-if "ETag" (s/generate-etag handler request graphdata))
+       (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
+       (assoc-if "Expires" (s/expires handler request graphdata)))))
+
 
   
 ; For some reason, this isn't working. But it's _really close_
@@ -75,6 +86,8 @@
         default-headers (build-headers handler request graphdata content-type body)
         headers (merge {} default-headers (:headers graphdata))
         final-body (when-not (= :head (:request-method request)) body)]
+    ;; (println "--- BUILDING BODY! (" code ")\n---- Final Body:\n" final-body
+    ;;          "\n---- Headers: " headers)
     {:status code :body final-body :headers headers}))
 
 

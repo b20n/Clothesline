@@ -17,17 +17,30 @@
       (content-type "text-plain")
       (status 404)))
 
+(defn- match-route [req route handler]
+  "Internal route matcher."
+  (when-let [new-params (route-matches route req)]
+    [req handler new-params]))
+
 (defn get-route [route-map req]
   "Selects the appropriate place to route the request based on the supplied map"
-  (first (filter #(route-matches (first %) req) route-map)))
+  (first (keep #(match-route req (first %) (second %)) route-map)))
 
-(defn handler [req]
+(defn base-handler [req]
   "Slim little shim for getting the route and doing something with it"
-  (let [[path route ] (get-route @*routes* req)]
-    (println "Handler is firing. Route is: " route)
-    (if route 
-      (g/start {:handler route
-                :request req
-                :graphdata {}})
-      (no-handler-found req))))
+  (if-let [[req handler new-params] (get-route @*routes* req)]
+    (g/start {:handler handler
+              :request (-> req
+                           (assoc :url-params new-params)
+                           (assoc :params (merge (:params req)
+                                                 new-params)))
+              :graphdata {}})
+    (no-handler-found req)))
+
+(def ^{:doc "The default, normally-wrapped handler. Includes query and param mapping.",
+       :arglists '([request])
+       :name "handler"}
+     handler
+     (-> base-handler
+         wrap-params))
 

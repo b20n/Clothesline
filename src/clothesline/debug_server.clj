@@ -8,7 +8,7 @@
 (defn- handle-req [r]
   (println "Handling mah req")
   (swap! saved-responses concat [r])
-  {:status 200, :body "<html><body><h1> YES </h1></body></html>", :headers {}})
+  {:status 200, :headers {}})
 
 (defonce instance
      (run-jetty #'handle-req { :join? false :port 8333 }))
