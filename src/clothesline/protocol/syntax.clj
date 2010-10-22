@@ -64,10 +64,8 @@
                            forward-args#
             (map? plan#)
                            plan# ; If it's a map, return it.
-            (or (instance? clojure.lang.IFn plan#))
-                           (do
-                               (println "--- Invoking next! ---")
-                               (apply plan# (list forward-args#))) ; If it's invokable, invoke it.
+            (or (instance? java.util.concurrent.Callable plan#))
+                           (apply plan# (list forward-args#)) ; If it's invokable, invoke it.
             :default plan#))
          )))
 
