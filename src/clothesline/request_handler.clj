@@ -1,15 +1,20 @@
 (ns clothesline.request-handler
-  (:use ring.util.response
-        ring.middleware.params
-        clout.core
-        [clothesline.protocol (graph :as g)]))
+  (:require [clothesline.protocol (graph :as g)])
+  (:use [ring.util.response]
+        [ring.middleware (params :only [wrap-params])]
+        [clout.core :only [route-compile route-matches]]))
 
 (defonce *routes* (ref {}))
 
 (defn set-routes [route-map] 
   "Set the route map to be used by the handler. This should take the form of
    a URL path as the key and a ref to a service implementation as the value"
-  (dosync (alter *routes* merge route-map)))
+  (let [compiled-routes (reduce #(assoc %1
+                                   (route-compile (first %2))
+                                   (second %2))
+                                {}
+                                route-map)]
+    (dosync (alter *routes* merge compiled-routes))))
 
 (defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
