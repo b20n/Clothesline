@@ -7,4 +7,5 @@
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
                      [clj-stacktrace "0.2.0"]]
   :aot [clothesline.service.iservice
-        clothesline.service.base-service])
+        clothesline.service.base-service
+        clothesline.protocol.test-helpers])
