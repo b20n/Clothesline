@@ -1,42 +1,11 @@
 (ns clothesline.protocol.response-helpers
   (:require [clojure.contrib [string :as strs]]
             [clothesline [service :as s]])
-  (:use     [clothesline [util :only [assoc-if get-with-key take-until]]]))
+  (:use     [clothesline [util :only [assoc-if take-until]]]))
 
 
-;; Response Handler Helpers
-
-(defn hv [request header]
-  ((:headers request) header))
-
-(defn purge-str-semicolon [astring]
-  (first (strs/split #";" astring)))
-
-(defn split-header-field [request field]
-  (let [headers (or (:headers request) {})
-        field   (headers field)]
-    (if field
-      (map purge-str-semicolon (strs/split #"," field))
-      (list))))
-
-(defn push-header-through [request field map]
-  (let [split-header (split-header-field request field)]
-    (keep #(when-let [v (get map %)] [% v]) split-header)))
-
-(defn map-accept-header
-  ([request field map with-default?]
-     (or (first (push-header-through request field map))
-         (or  (get-with-key map "*/*") (get-with-key map "*"))
-         (and with-default? (first map))))
-  ([request field map] (map-accept-header request field map true)))
 
 ;; Response builders
-
-(defn stop-response
-  ([^int code] {:status code :headers {}})
-  ([^int code headers] {:status code :headers headers})
-  ([^int code headers msg] {:status code :headers headers :body msg}))
-
 
 (defn build-body [handler request graphdata]
   (if (:body graphdata)
@@ -53,12 +22,12 @@
                                        "")]
         [content-type body]))))
 
-(defn create-ct-header [content-type-str graphdata]
+(defn build-ct-header [content-type-str graphdata]
   (let [[enc encr] (:content-charset graphdata)
         encoding-str (when enc (str "; charset" enc))]
     (str content-type-str encoding-str)))
 
-(defn build-headers [handler
+(defn build-normal-headers [handler
                      {method :request-method :as request}
                      graphdata
                      content-type
@@ -66,30 +35,31 @@
   (cond
    (= :get method)
      (-> {}
-        (assoc-if "Content-Type" (create-ct-header content-type graphdata) content-type)
+        (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
         (assoc-if "Content-Length" (str (count body)) body)
         (assoc-if "ETag" (s/generate-etag handler request graphdata))
         (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
         (assoc-if "Expires" (s/expires handler request graphdata)))
    (= :head method)
      (-> {}
-       (assoc-if "Content-Type" (create-ct-header content-type graphdata) content-type)
+       (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
        (assoc-if "ETag" (s/generate-etag handler request graphdata))
        (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
        (assoc-if "Expires" (s/expires handler request graphdata)))))
 
-
   
-; For some reason, this isn't working. But it's _really close_
-(defn generate-response [code {:keys [handler request graphdata]}]
+(defn generate-normal-response [code {:keys [handler request graphdata]}]
   (let [[content-type body] (build-body handler request graphdata)
-        default-headers (build-headers handler request graphdata content-type body)
+        default-headers (build-normal-headers handler request graphdata content-type body)
         headers (merge {} default-headers (:headers graphdata))
         final-body (when-not (= :head (:request-method request)) body)]
     ;; (println "--- BUILDING BODY! (" code ")\n---- Final Body:\n" final-body
     ;;          "\n---- Headers: " headers)
+    (s/finish-request handler request graphdata) ; Currently ignored. Probably shouldn't be.
     {:status code :body final-body :headers headers}))
 
 
-
-
+(defn stop-response
+  ([^int code] {:status code :headers {}})
+  ([^int code headers] {:status code :headers headers})
+  ([^int code headers msg] {:status code :headers headers :body msg}))

@@ -2,6 +2,10 @@
   (:require [clojure.contrib [string :as strs]]
             [clothesline.protocol [response-helpers :as helper]]))
 
+;; Construct a valid return value
+
+
+
 ;; Syntax helpers
 
 (defmacro request-header-exists?
@@ -35,6 +39,6 @@
      (apply ~protocol-method (list handler# request# data#))))
 
 (defmacro normal-response [^int code]
-  `(partial helper/generate-response ~code))
+  `(partial helper/generate-normal-response ~code))
 
 

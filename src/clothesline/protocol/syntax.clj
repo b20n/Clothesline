@@ -1,6 +1,7 @@
 (ns clothesline.protocol.syntax
   (:use [clojure.contrib.macro-utils]
-        [clothesline.protocol [response-helpers]]))
+        [clothesline.protocol [response-helpers]])
+  (:require [clothesline.protocol [test-helpers :as test-helpers]]))
 
 (defmacro protocol-machine [& forms]
   (let [stateforms (filter #(= (str (first %)) "defstate") forms)
@@ -25,13 +26,13 @@
                            annotate
                            body]} graphdata]
   (-> graphdata
-      (update-in [:headers] #(merge % headers))
+      (update-in [:headers] #(merge % (or headers {})))
       (merge (dissoc annotate :headers))))
 
 (declare gen-test-forms gen-body-forms)
+(def *debug-mode-runone* false)   ; If set to true, the state doesn't progress, but rather
+                                  ;  stops immediately with a processing dump.
 
-(def *debug-mode-runone* false) ; If set to true, the state doesn't progress, but rather
-                         ; stops immediately with a processing dump.
 (defmacro state [& {:as state-opts}]
   (let [has-body? (:body state-opts)]
     (if-not has-body?
@@ -43,20 +44,15 @@
     `(fn [& [ {request# :request
                handler# :handler
                graphdata# :graphdata :as args#}]]
-         (let [test# ~(:test opts)
-               test-result# (test# args#)
-               result# (or (:result test-result#)
-                                    test-result#)
-               plan#   (if result#
+       (let [test# ~(:test opts)
+             test-result# (test# args#)
+             [result# ndata#] (test-helpers/result-and-graphdata
+                               test-result#
+                               graphdata#)
+             plan#   (if result#
                          ~(:yes opts)
                          ~(:no opts))
-               nreq#    (if (and (map? test-result#) (contains? test-result# :update-request))
-                          (merge request# (:update-request test-result#))
-                          request#)
-               ndata#     (if (map? test-result#)
-                            (update-data test-result# graphdata#)
-                            graphdata#)
-               forward-args# (assoc args# :graphdata ndata# :request nreq#)]
+             forward-args# (assoc args# :graphdata ndata#)]
            (println "Intermediate (" ~(:name opts) ")" test-result#)
            (println "  :: " forward-args#)
            (cond
@@ -64,10 +60,11 @@
                            forward-args#
             (map? plan#)
                            plan# ; If it's a map, return it.
-            (or (instance? java.util.concurrent.Callable plan#))
-                           (apply plan# (list forward-args#)) ; If it's invokable, invoke it.
-            :default plan#))
-         )))
+            (instance? java.util.concurrent.Callable plan#)
+                           (apply plan#
+                                  (list forward-args#)) ; If it's invokable, invoke it.
+            :default plan#)))))
+
 
 
 (defn gen-body-forms [state-opts] (:body state-opts))
