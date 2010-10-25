@@ -1,7 +1,7 @@
 (ns clothesline.protocol.test-helpers
   (:require [clojure.contrib [string :as strs]])
-  (:use     [clothesline [util :only [get-with-key]]]
-            clothesline.interop.nodetest))
+  (:import  clothesline.interop.nodetest.TestResult)
+  (:use     [clothesline [util :only [get-with-key]]]))
 
 
 ;; Response Handler Helpers
@@ -35,6 +35,11 @@
 (defn annotated-return
   ([result] (TestResult. result nil))
   ([result annotations] (TestResult. result annotations)))
+
+(defn getres [v]
+  (if (= class v TestResult)
+    (:result v)
+    v))
 
 (defmulti result-and-graphdata
   "A function to handle annotated vs regular returns. If the result of a
