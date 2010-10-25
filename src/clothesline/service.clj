@@ -1,5 +1,5 @@
 (ns clothesline.service
-  (:import clothesline.service.IService))
+  (:import clothesline.interop.IService))
 
 (defprotocol service
   "Service objects comform to this spec."
@@ -83,7 +83,7 @@
 
 
 
-(extend clothesline.service.IService
+(extend clothesline.interop.IService
   service
   {
    :resource-exists? (fn [self request graphdata] (.resourceExists self request graphdata))

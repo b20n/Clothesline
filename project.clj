@@ -6,6 +6,6 @@
                  [ring "0.3.1"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
                      [clj-stacktrace "0.2.0"]]
-  :aot [clothesline.service.iservice
+  :aot [clothesline.interop.iservice
         clothesline.service.base-service
-        clothesline.protocol.test-helpers])
+        clothesline.interop.nodetest])

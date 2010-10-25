@@ -1,6 +1,6 @@
-(ns clothesline.service.iservice)
+(ns clothesline.interop.iservice)
 (gen-interface
-  :name clothesline.service.IService
+  :name clothesline.interop.IService
   :methods [
             [resourceExists
              [clojure.lang.APersistentMap clojure.lang.APersistentMap] boolean]

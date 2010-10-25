@@ -1,6 +1,7 @@
 (ns clothesline.protocol.test-helpers
   (:require [clojure.contrib [string :as strs]])
-  (:use     [clothesline [util :only [get-with-key]]]))
+  (:use     [clothesline [util :only [get-with-key]]]
+            clothesline.interop.nodetest))
 
 
 ;; Response Handler Helpers
@@ -30,8 +31,6 @@
   ([request field map] (map-accept-header request field map true)))
 
 ;; Test return value
-
-(defrecord TestResult [result annotations])
 
 (defn annotated-return
   ([result] (TestResult. result nil))
