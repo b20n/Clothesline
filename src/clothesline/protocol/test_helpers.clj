@@ -37,9 +37,14 @@
   ([result annotations] (TestResult. result annotations)))
 
 (defn getres [v]
-  (if (= class v TestResult)
+  (if (instance? TestResult v)
     (:result v)
     v))
+
+(defn getresann [v]
+  (if (instance? TestResult v)
+    ((juxt :result :annotations) v)
+    [v nil]))
 
 (defmulti result-and-graphdata
   "A function to handle annotated vs regular returns. If the result of a

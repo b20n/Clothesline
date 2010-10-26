@@ -29,7 +29,7 @@
 
  (defstate b10
    :test (fn [{:keys [handler request graphdata]}]
-           ((s/allowed-methods handler request graphdata) 
+           ((getres (s/allowed-methods handler request graphdata)) 
             (:request-method request)))
    :yes b9
    :no (stop-response 501))
@@ -69,7 +69,7 @@
  (defstate b3
    :body (fn [{:keys [handler request graphdata] :as args}]
            (if (= :options (:request-method request))
-             (let [options-headers (or (s/options handler request graphdata) {})]
+             (let [options-headers (or (getres (s/options handler request graphdata)) {})]
                {:status 200
                 :body ""
                 :headers options-headers})
@@ -84,9 +84,9 @@
  (defstate c4
    "Map the accept handler through and set it."
    :test (fn [{:keys [handler request graphdata]}]
-           (let [available-handlers (s/content-types-provided handler
-                                                              request
-                                                              graphdata)
+           (let [available-handlers (getres (s/content-types-provided handler
+                                                                      request
+                                                                      graphdata))
                  chosen  (map-accept-header request "accept" available-handlers)]
              (if chosen
                (annotated-return true {:annotate {:content-handler chosen}})
@@ -113,9 +113,9 @@
  (defstate e6
    "Check and select a supported character set"
    :test (fn [{:keys [handler request graphdata]}]
-           (let [available-handlers (s/charsets-provided handler
-                                                         request
-                                                         graphdata)
+           (let [available-handlers (getres (s/charsets-provided handler
+                                                                 request
+                                                                 graphdata))
                  chosen  (map-accept-header request "accept-charset" available-handlers)]
              (if chosen
                (annotated-return true {:annotate {:content-charset chosen}})
@@ -131,9 +131,9 @@
 
  (defstate f7
    :test (fn [{:keys [handler request graphdata]}]
-           (let [available-handlers (s/charsets-provided handler
-                                                         request
-                                                         graphdata)
+           (let [available-handlers (getres (s/charsets-provided handler
+                                                                 request
+                                                                 graphdata))
                  chosen  (map-accept-header request "accept-encoding" available-handlers)]
              (if chosen
                (annotated-return true {:annotate {:content-encoding chosen}})
@@ -166,8 +166,8 @@
  (defstate g11
    :test (fn [{:keys [request handler graphdata]}]
            (let [if-match-value (hv request "if-match")
-                 etag (s/generate-etag handler request graphdata)]
-             (= if-match-value etag)))
+                 [etag ann] (getres (s/generate-etag handler request graphdata))]
+             (annotated-return (= if-match-value etag) ann)))
    :yes h10
    :no (stop-response 412))
 
@@ -190,8 +190,9 @@
 
  (defstate k13
    :test (fn [{:keys [request handler graphdata]}]
-           (= (s/generate-etag handler request graphdata)
-              (hv request "if-none-match")))
+           (let [[v ann] (getresann (s/generate-etag handler request graphdata))] 
+             (annotated-return (= v (hv request "if-none-match"))
+                               ann)))
    :yes j18
    :no l13)
 
@@ -263,22 +264,34 @@
 
  (defstate k5
    :test (fn [{:keys [handler request graphdata]}]
-           (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
-             (annotated-return true {:headers {"Location", redirect-to}})))
+           (let [[redirect-to ann] (getresann (s/moved-permanently? handler
+                                                                    request
+                                                                    graphdata))]
+             (if redirect-to
+               (annotated-return true (merge ann {:headers {"Location", redirect-to}}))
+               (annotated-return false ann))))
    :yes (normal-response 301)
    :no l5)
 
  (defstate i4
    :test (fn [{:keys [handler request graphdata]}]
-           (when-let [redirect-to (s/moved-permanently? handler request graphdata)]
-             (annotated-return true {:headers {"Location", redirect-to}})))
+           (let [[redirect-to ann] (getresann (s/moved-permanently? handler
+                                                                    request
+                                                                    graphdata))]
+             (if redirect-to
+               (annotated-return true (merge ann {:headers {"Location", redirect-to}}))
+               (annotated-return false ann))))
    :yes (normal-response 301)
    :no p3)
 
  (defstate l5
    :test (fn [{:keys [handler request graphdata]}]
-           (when-let [redirect-to (s/moved-temporarily? handler request graphdata)]
-             (annotated-return true {:headers {"Location", redirect-to}})))
+           (let [[redirect-to ann] (getresann (s/moved-temporarily? handler
+                                                                    request
+                                                                    graphdata))]
+             (if redirect-to
+               (annotated-return true (merge ann {:headers {"Location", redirect-to}}))
+               (annotated-return false ann))))
    :yes (normal-response 307)
    :no m5)
 
