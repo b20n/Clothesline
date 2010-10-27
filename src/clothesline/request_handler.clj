@@ -2,19 +2,19 @@
   (:require [clothesline.protocol (graph :as g)])
   (:use [ring.util.response]
         [ring.middleware (params :only [wrap-params])]
-        [clout.core :only [route-compile route-matches]]))
+        [clout.core :only [route-compile route-matches]]
+        [clothesline.util :only [map-keys]]))
 
-(defonce *routes* (ref {}))
+(defonce ^{:doc "A ref of map of ring/clout route strings to clothesline
+                 handlers, which are used in the HTTP graph."}
+         *routes* {})
 
-(defn set-routes [route-map] 
-  "Set the route map to be used by the handler. This should take the form of
-   a URL path as the key and a ref to a service implementation as the value"
-  (let [compiled-routes (reduce #(assoc %1
-                                   (route-compile (first %2))
-                                   (second %2))
-                                {}
-                                route-map)]
-    (dosync (alter *routes* merge compiled-routes))))
+
+(defn compile-route-map [route-handler-map]
+  "Takes a map of [clout-route -> thing] and compiles the routes. Note
+ that this destroys the equality keys, so it's mostly useful for iterating
+ over the structure."
+  (map-keys route-compile route-handler-map true))
 
 (defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
@@ -33,7 +33,7 @@
 
 (defn base-handler [req]
   "Slim little shim for getting the route and doing something with it"
-  (if-let [[req handler new-params] (get-route @*routes* req)]
+  (if-let [[req handler new-params] (get-route *routes* req)]
     (g/start {:handler handler
               :request (-> req
                            (assoc :url-params new-params)
@@ -48,4 +48,3 @@
      handler
      (-> base-handler
          wrap-params))
-

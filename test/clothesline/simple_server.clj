@@ -1,6 +1,7 @@
 (ns clothesline.simple-server
   (:use clothesline.service.helpers
-        ring.adapter.jetty)
+        ring.adapter.jetty
+        clothesline.core)
   (:require [clothesline [request-handler :as rh]]))
 
 (defsimplehandler bogus-server
@@ -10,10 +11,8 @@
 (defsimplehandler bogus-server2
   "text/plain" (fn [req data] (str "Your params are: " (:params req) "\nRequest Dump: " req)))
 
-(rh/set-routes { "/" bogus-server,
-                 "/:p" bogus-server2})
+(def example-routes { "/" bogus-server,
+                      "/:p" bogus-server2})
 
 
-(defonce *current-server*
-     (run-jetty #'rh/handler { :join? false :port 8999 }))
-
+(defonce *server* (produce-server example-routes {:port 8999 :join? false}))

@@ -8,4 +8,5 @@
                      [clj-stacktrace "0.2.0"]]
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
-        clothesline.service.base-service])
+        clothesline.service.base-service
+        clothesline.core])

@@ -7,16 +7,17 @@
   (:require [clothesline [service :as s]]))
 
 
+;; Perhaps avoid an error?
+(def b13 identity)
+
 (protocol-machine
- 
- (def start #'b13)
- 
+
  (defstate b13
    "Check if service has been made unavailable. Return status 503 if not."
    :test (call-on-handler s/service-available?)
    :yes b12
    :no (stop-response 503))
-
+ 
  (defstate b12
    :test (constantly true)
    :yes b11
@@ -344,3 +345,5 @@
    :yes :respond
    :no {:status 500, :body "Epic fail."})
  ) ; Protocol machine v3.
+
+  (def start #'b13)

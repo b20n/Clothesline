@@ -5,8 +5,8 @@
 
 (defmacro protocol-machine [& forms]
   (let [stateforms (filter #(= (str (first %)) "defstate") forms)
-        names      (map second stateforms)]
-    `(do (declare ~@names) ~@forms)))
+        nameholders (->> stateforms (map second) (map (fn [x] `(def ~x identity))))]
+    `(do ~@nameholders ~@forms)))
 
 (defmacro defstate [name & forms]
   (let [docstring (reduce str (interpose "\n" (take-while string? forms)))

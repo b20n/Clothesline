@@ -1,1 +1,24 @@
-(ns Clothesline.core)
+(ns clothesline.core
+  (:require [ring.adapter [jetty :as ring]]
+             clothesline.protocol.graph)
+  (:use [clothesline.request-handler :only [compile-route-map handler *routes*]]
+        clothesline.util)
+  (:import org.mortbay.jetty.Server)
+  (:gen-class :name clothesline.interop.Factory
+              :methods [^{:static true} [makeServer
+                         [java.util.Map java.util.Map] ; ->
+                         org.mortbay.jetty.Server]]))
+
+
+
+(def ^{:doc "Set false if you hate performance"} *auto-compile-routes* true)
+(defn produce-server
+     ([routes server-opts]
+        (binding [*routes* (if *auto-compile-routes* (compile-route-map routes) routes)]
+          (ring/run-jetty (bound-fn [req] (handler req)) server-opts)))
+     ([routes] (produce-server routes {:port 80 :join? false})))
+
+
+;; Expose to the outside world.
+(defn -makeServer [routeTable server-opts]
+  (produce-server routeTable (map-keys keyword server-opts)))

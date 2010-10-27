@@ -13,3 +13,11 @@
         (assoc col key value)
         col))
   ([col key value] (assoc-if col key value value)))
+
+(defn map-keys
+  "Produces a new map where all keys have been transformed into f(k)."
+  ([f col _] ; Preserving order is currently ignored
+     (reduce (fn [v [key val]] (assoc v (f key) val))
+             {}
+             col))
+  ([f col] (map-keys f col false)))
