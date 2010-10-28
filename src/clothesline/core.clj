@@ -1,12 +1,13 @@
 (ns clothesline.core
   (:require [ring.adapter [jetty :as ring]]
-             clothesline.protocol.graph)
-  (:use [clothesline.request-handler :only [compile-route-map handler *routes*]]
-        clothesline.util)
+            clothesline.protocol.graph
+            [clothesline [util :as util]])
+  
+  (:use [clothesline.request-handler :only [compile-route-map handler *routes*]])
   (:import org.mortbay.jetty.Server)
   (:gen-class :name clothesline.interop.Factory
               :init init
-              :methods [^{:static true} [makeServer
+              :methods [^:static [makeServer
                          [java.util.Map java.util.Map] ; ->
                          org.mortbay.jetty.Server]]))
 
@@ -23,4 +24,4 @@
 
 ;; Expose to the outside world.
 (defn -makeServer [routeTable server-opts]
-  (produce-server routeTable (map-keys keyword server-opts)))
+  (produce-server routeTable (util/map-keys keyword server-opts)))
