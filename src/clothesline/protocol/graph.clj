@@ -7,9 +7,6 @@
   (:require [clothesline [service :as s]]))
 
 
-;; Perhaps avoid an error?
-(def b13 identity)
-
 (protocol-machine
 
  (defstate b13
@@ -321,16 +318,24 @@
    :test (call-on-handler s/allow-missing-post?)
    :no (stop-response 410)
    :yes n11)
+
+
+ 
+ (defn n11-helper-cpath [handler request graphdata]
+   (let [[is-create? s1-anns] (getresann (s/post-is-create? handler request graphdata))
+         igraphdata (update-graphdata-with-anns graphdata s1-anns)]
+     (if is-create?
+       (let [[cpath s2-anns] (getresann (s/create-path handler request igraphdata))]
+         [cpath (merge-annotations s1-anns s2-anns {:annotate {:create-path cpath}})])
+       [false s1-anns])))
+
+ (defn n11-post-helper [{:keys [handler request graphdata]}]
+   (let [[cpath new-anns] (n11-helper-cpath handler request graphdata)
+         igraphdata (update-graphdata-with-anns graphdata new-anns)]
+     (annotated-return (boolean (-> igraphdata :headers (get "Location"))) new-anns)))
  
  (defstate n11
-                                        ; TODO, fix this so it does what it's supposed to.
-   :test (fn [{:keys [handler request graphdata]}]
-           (let [is-redirect false]
-             (if (s/post-is-create? handler request graphdata)
-               (let [cpath (s/create-path handler request graphdata)]
-                 false)
-               (do (s/process-post handler request graphdata)
-                   false))))
+   :test n11-post-helper
    :yes (normal-response 303)
    :no p11)
 

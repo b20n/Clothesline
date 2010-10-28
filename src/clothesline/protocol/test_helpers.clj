@@ -46,6 +46,24 @@
     ((juxt :result :annotations) v)
     [v nil]))
 
+(defn merge-annotations
+  ([ann1] ann1)
+  ([ann1 ann2]
+     (let [f (juxt :annotate :headers)
+           [a1 h1] (f ann1)
+           [a2 h2] (f ann2)]
+       {:annotate (merge a1 a2) :headers (merge h1 h2)}))
+  ([ann1 ann2 ann3 & more]
+     (apply merge-annotations (list* (-> ann1
+                                         (merge-annotations ann2)
+                                         (merge-annotations ann3))
+                                     more))))
+
+(defn update-graphdata-with-anns [graphdata {:keys [annotate headers]}]
+  (-> (or graphdata {}) 
+      (update-in [:headers] #(merge % (or headers {})))
+      (merge (dissoc annotate :headers))))
+
 (defmulti result-and-graphdata
   "A function to handle annotated vs regular returns. If the result of a
    test is a clothesline.protocol.test-helpers.TestResult, its annotations
@@ -55,11 +73,8 @@
   (fn [& args] (class (first args))))
 
 (defmethod result-and-graphdata TestResult
-  [{result :result {:keys [annotate headers]} :annotations}
-   graphdata]
-  [result (-> graphdata
-              (update-in [:headers] #(merge % (or headers {})))
-              (merge (dissoc annotate :headers)))])
+  [{result :result annotations :annotations} graphdata]
+  [result (update-graphdata-with-anns graphdata annotations)])
 
 (defmethod result-and-graphdata :default
   [result graphdata]
