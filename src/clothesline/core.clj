@@ -5,6 +5,7 @@
         clothesline.util)
   (:import org.mortbay.jetty.Server)
   (:gen-class :name clothesline.interop.Factory
+              :init init
               :methods [^{:static true} [makeServer
                          [java.util.Map java.util.Map] ; ->
                          org.mortbay.jetty.Server]]))
@@ -18,6 +19,7 @@
           (ring/run-jetty (bound-fn [req] (handler req)) server-opts)))
      ([routes] (produce-server routes {:port 80 :join? false})))
 
+(defn -init [])
 
 ;; Expose to the outside world.
 (defn -makeServer [routeTable server-opts]
