@@ -32,6 +32,9 @@
 (defn -validContentHeaders [self request graphdata]
   (annotated-return true))
 
+(defn -validEntityLength [self request graphdata]
+  (annotated-return true))
+
 (defn -options [self request graphdata]
   (annotated-return nil))
 
