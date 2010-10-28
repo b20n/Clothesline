@@ -1,7 +1,7 @@
 (ns clothesline.startup
   (:import clothesline.interop.Factory)
   (:use clothesline.service.helpers)
-  (:gen-class))
+  (:gen-class :name clothesline.startup.Main))
 
 (defsimplehandler test-handler
   "text/plain" (fn [& args] "Yar."))
