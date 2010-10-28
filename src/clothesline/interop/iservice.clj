@@ -21,6 +21,8 @@
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [knownContentType
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
+            [validEntityLength
+             [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [validContentHeaders
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [options
