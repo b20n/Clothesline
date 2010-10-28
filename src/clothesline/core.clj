@@ -23,5 +23,5 @@
 (defn -init [])
 
 ;; Expose to the outside world.
-(defn -makeServer [routeTable server-opts]
+(defn -makeServer [this routeTable server-opts]
   (produce-server routeTable (util/map-keys keyword server-opts)))

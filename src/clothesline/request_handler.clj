@@ -1,9 +1,9 @@
 (ns clothesline.request-handler
-  (:require [clothesline.protocol (graph :as g)])
+  (:require [clothesline.protocol [graph :as g]]
+            [clothesline.util :as util])
   (:use [ring.util.response]
         [ring.middleware (params :only [wrap-params])]
-        [clout.core :only [route-compile route-matches]]
-        [clothesline.util :only [map-keys]]))
+        [clout.core :only [route-compile route-matches]]))
 
 (defonce ^{:doc "A ref of map of ring/clout route strings to clothesline
                  handlers, which are used in the HTTP graph."}
@@ -14,7 +14,7 @@
   "Takes a map of [clout-route -> thing] and compiles the routes. Note
  that this destroys the equality keys, so it's mostly useful for iterating
  over the structure."
-  (map-keys route-compile route-handler-map true))
+  (util/map-keys route-compile route-handler-map true))
 
 (defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
