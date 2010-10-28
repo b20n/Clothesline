@@ -9,4 +9,5 @@
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
         clothesline.service.base-service
-        clothesline.core])
+        clothesline.core
+        clothesline.startup])

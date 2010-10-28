@@ -1,5 +1,5 @@
 (ns clothesline.startup
-  (:import clothesline.Factory)
+  (:import clothesline.interop.Factory)
   (:use clothesline.service.helpers)
   (:gen-class))
 

@@ -7,7 +7,7 @@
   (:import org.mortbay.jetty.Server)
   (:gen-class :name clothesline.interop.Factory
               :init init
-              :methods [^:static [makeServer
+              :methods [^{:static true} [makeServer
                          [java.util.Map java.util.Map] ; ->
                          org.mortbay.jetty.Server]]))
 
@@ -23,5 +23,5 @@
 (defn -init [])
 
 ;; Expose to the outside world.
-(defn -makeServer [this routeTable server-opts]
+(defn -makeServer [routeTable server-opts]
   (produce-server routeTable (util/map-keys keyword server-opts)))
