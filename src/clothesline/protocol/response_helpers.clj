@@ -1,6 +1,7 @@
 (ns clothesline.protocol.response-helpers
   (:require [clojure.contrib [string :as strs]]
-            [clothesline [service :as s]])
+            [clothesline [service :as s]]
+            [clothesline.protocol.test-helpers :as helpers])
   (:use     [clothesline [util :only [assoc-if take-until]]]))
 
 
@@ -14,9 +15,9 @@
     (if (#{:get :head} (:request-method request))
       ;; It's a head or get, so we want to build a body explicitly.
       (let [[content-type generator] (or (:content-handler graphdata)
-                                         (first (s/content-types-provided handler
-                                                                          request
-                                                                          graphdata)))
+                                         (first (helpers/getres (s/content-types-provided handler
+                                                                                  request
+                                                                                  graphdata))))
             body                     (if generator
                                        (generator request graphdata)
                                        "")]
@@ -37,15 +38,15 @@
      (-> {}
         (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
         (assoc-if "Content-Length" (str (count body)) body)
-        (assoc-if "ETag" (s/generate-etag handler request graphdata))
-        (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
-        (assoc-if "Expires" (s/expires handler request graphdata)))
+        (assoc-if "ETag" (helpers/getres (s/generate-etag handler request graphdata)))
+        (assoc-if "Last-Modified" (helpers/getres (s/last-modified handler request graphdata)))
+        (assoc-if "Expires" (helpers/getres (s/expires handler request graphdata))))
    (= :head method)
      (-> {}
        (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
-       (assoc-if "ETag" (s/generate-etag handler request graphdata))
-       (assoc-if "Last-Modified" (s/last-modified handler request graphdata))
-       (assoc-if "Expires" (s/expires handler request graphdata)))))
+       (assoc-if "ETag" (helpers/getres (s/generate-etag handler request graphdata)))
+       (assoc-if "Last-Modified" (helpers/getres (s/last-modified handler request graphdata)))
+       (assoc-if "Expires" (helpers/getres (s/expires handler request graphdata))))))
 
   
 (defn generate-normal-response [code {:keys [handler request graphdata]}]
