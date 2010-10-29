@@ -115,6 +115,6 @@
    :moved-temporarily? (fn [self request graphdata] (.movedTemporarily  self request graphdata))
    :last-modified (fn [self request graphdata] (.lastModified  self request graphdata))
    :expires (fn [self request graphdata] (.expires  self request graphdata))
-   :generate-etag (fn [self request graphdata] (.generateEtag  self request graphdata))
+   :generate-etag (fn [self request graphdata] (.generateETag  self request graphdata))
    :finish-request (fn [self request graphdata] (.finishRequest  self request graphdata))
  })

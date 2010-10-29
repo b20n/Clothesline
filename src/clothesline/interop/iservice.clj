@@ -63,5 +63,5 @@
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [generateETag
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
-            [finishRquest
+            [finishRequest
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]])
