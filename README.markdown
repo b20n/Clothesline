@@ -51,7 +51,7 @@ quickly make a simple hello-world service:
     "text/plain" (fn [request graphdata] 
                      (str "Your params: " (:params request))))
     ;; A traditional clout routing table. Note the colon-params in the
-    ;; service are provided.d
+    ;; service are provided and placed in 
     (def routes {"/" example1-simple, "/:gratis" example1-params})
     
     ;; This is our server instance:
@@ -100,6 +100,8 @@ handler is unusual. Content-Length, in particular, can be disasterous
 to modify since most browsers hang  when confronted with an
 over-large Content-Length header.
 
+-----
+
 ### Expected Usage: Where Logic Lives ###
 
 All handler calls receive 2 arguments, the Ring request and the
@@ -134,8 +136,26 @@ etc), but they are currently not supported.
 
 `finish-request`'s return values are ignored.
 
-## Meaningful Keys in Graphdata ##
+## Meaningful Keys For Annotation ##
 
+Annotation keys are stored in the graphdata structure, which is passed
+amongst states and passed to every handler test.
+
+The graphdata structure contain annotations and the sum of the headers
+that should be explicitly added. These values can be directly
+specified with annotations. If a test called later in the graph specifies a value that
+contradicts an earlier value, the later specification overides the
+earlier one. It is important to note that these values are special,
+but not the only allowed values. *Any key and value is a valid
+annotation!* 
+
+:headers
+:body 
+:content-type
+:content-encoding
+:content-encoder
+:content-charset
+:content-converter
 
 
 ## Further Work Towards Completeness ##
