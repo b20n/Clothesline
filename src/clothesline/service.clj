@@ -110,7 +110,7 @@
    :variances (fn [self request graphdata] (.variances  self request graphdata))
    :conflict? (fn [self request graphdata] (.conflict  self request graphdata))
    :multiple-choices? (fn [self request graphdata] (.multipleChoices  self request graphdata))
-   :previously-existed? (fn [self request graphdata] (.previously-existed  self request graphdata))
+   :previously-existed? (fn [self request graphdata] (.previouslyExisted  self request graphdata))
    :moved-permanently? (fn [self request graphdata] (.movedPermanently  self request graphdata))
    :moved-temporarily? (fn [self request graphdata] (.movedTemporarily  self request graphdata))
    :last-modified (fn [self request graphdata] (.lastModified  self request graphdata))

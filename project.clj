@@ -11,4 +11,5 @@
         clothesline.interop.iservice
         clothesline.service.base-service
         clothesline.core
-        clothesline.startup])
+        clothesline.startup
+        clothesline.util])
