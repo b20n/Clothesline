@@ -65,7 +65,7 @@
  :post-is-create? (fn [self request graphdata] false)
  :create-path (fn [self request graphdata] false)
  :process-post (fn [self request graphdata] false)
- :content-types-provided (fn [self request graphdata] {})
+ :content-types-provided (fn [self request graphdata] {"text/html" (constantly nil)})
  :content-types-accepted (fn [self request graphdata] {})
  :charsets-provided (fn [self request graphdata] nil)
  :encodings-provided (fn [self request graphdata] nil)

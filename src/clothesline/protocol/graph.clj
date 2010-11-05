@@ -321,20 +321,22 @@
 
 
  
- (defn n11-helper [handler request graphdata]
+ (defn n11-helper [{:keys [handler request graphdata]}]
    (let [[is-create? s1-anns] (getresann (s/post-is-create? handler request graphdata))
          igraphdata (update-graphdata-with-anns graphdata s1-anns)]
      (if is-create?
        (let [[cpath s2-anns] (getresann (s/create-path handler request igraphdata))
              merged-anns (merge-annotations s1-anns s2-anns {:annotate {:post-created-path cpath
-                                                                        :post-status true}})]
+                                                                        :post-status true}
+                                                             :headers {"Location" cpath}})]
          (annotated-return (boolean (-> igraphdata :headers (get "Location"))) merged-anns))
        (let [[post-status s2-anns] (getresann (s/process-post handler request igraphdata))
              merged-anns (merge-annotations s1-anns
                                              s2-anns
                                              {:annotate {:post-status post-status}})
              final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
-         (annotated-return (boolean (-> final-graphdata :headers (get "Location")))
+         (annotated-return (boolean (and (-> final-graphdata :headers (get "Location"))
+                                         (:post-is-redirect final-graphdata)))
                            merged-anns)))))
 
  (defstate n11

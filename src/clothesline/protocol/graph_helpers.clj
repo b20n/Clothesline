@@ -15,7 +15,7 @@
 
 (defmacro response-header-set?
   [header-name]
-  `(fn [{{headers# :headers} :request}]
+  `(fn [{{headers# :headers} :graphdata}]
      (contains? headers# ~header-name)))
 
 (defmacro graphdata-item-exists?
