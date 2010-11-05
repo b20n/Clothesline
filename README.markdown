@@ -7,7 +7,7 @@ Clothesline is a port of the popular HTTP service framework
 Clojure, with provisions for use in Scala and Java. It is currently a
 naive port; it closely mimics the WebMachine module signature (as a
 java interface) and execution model (even down to the [graph model and
-node names](http://webmachine.basho.com/diagram.html). 
+node names](http://webmachine.basho.com/diagram.html)). 
 
 ### What Does It Do? ###
 
@@ -21,7 +21,7 @@ Clothesline uses [Ring](http://github.com/mmcgrana/ring) and
 [Clout](http://github.com/weavejester/clout) to provide an abstract
 base over a variety of web servers (although the default is
 Jetty). Much like other Ring-based libraries, Clothesline takes a
-routing table and routes it to hanlders. Unlike other libraries which
+routing table and routes it to handlers. Unlike other libraries which
 simply plass the request to a naive handler function, Clothesline
 moves across a graph of HTTP 1.1 behavior, using your request and the
 routed handler to make specific decisions about how to proceed. The
@@ -58,7 +58,9 @@ quickly make a simple hello-world service:
     (defonce *server* 
       (produce-server routes {:port 9999 :join? false}))
 
-`defsimplehandler` is actually a very simple macro. It expands our form to the relatively simple handler form that overrides `content-types-provided` for that specific instance. 
+`defsimplehandler` is actually a very simple macro. It expands our form 
+to the relatively simple handler form that overrides 
+`content-types-provided` for that specific instance. 
 
 ## Format of a Handler ##
 
