@@ -14,15 +14,15 @@
   (let [[ct handler] (first (helpers/getres (s/content-types-provided handler
                                                                       request
                                                                       graphdata)))]
-    [ct (produce-body handler)]))
+    [ct handler]))
 
 
 (defn content-handler [handler request {{ct "Content-Type"} :headers
                                         body :body :as graphdata}]
   (if body
-    [(or ct "text/plain") (produce-body body request graphdata)]
+    [(or ct "text/plain") body]
     (default-content-handler handler request graphdata)))
 
 (defn body-content [handler request graphdata]
   (let [[content-type-name content-source] (content-handler handler request graphdata)]
-    [content-type-name (produce-body content-source)]))
+    [content-type-name (produce-body content-source request graphdata)]))

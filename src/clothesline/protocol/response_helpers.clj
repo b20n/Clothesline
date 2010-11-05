@@ -53,7 +53,7 @@
 
   
 (defn generate-normal-response [code {:keys [handler request graphdata]}]
-  (let [[content-type body] (bh/content-handler handler request graphdata)
+  (let [[content-type body] (bh/body-content handler request graphdata)
         default-headers (build-normal-headers handler request graphdata content-type body)
         headers (merge {} default-headers (:headers graphdata))
         final-body (when-not (= :head (:request-method request)) @body)]
