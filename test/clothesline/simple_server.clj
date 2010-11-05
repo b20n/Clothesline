@@ -1,8 +1,7 @@
 (ns clothesline.simple-server
   (:use clothesline.service.helpers
         ring.adapter.jetty
-        clothesline.core)
-  (:require [clothesline [request-handler :as rh]]))
+        clothesline.core))
 
 (defsimplehandler bogus-server
   "text/plain" (fn [req data] "Fu!")
@@ -13,6 +12,5 @@
 
 (def example-routes { "/" bogus-server,
                       "/:p" bogus-server2})
-
 
 (defonce *server* (produce-server example-routes {:port 8999 :join? false}))

@@ -4,17 +4,25 @@
             [clothesline.protocol.test-helpers :as helpers])
   (:use     [clothesline [util :only [assoc-if take-until]]]))
 
-(defn build-body [handler request graphdata]
-  (if (:body graphdata)
-    ;; Explicit bodies always get added.
-    [(or (:content-type graphdata) "text/plain") (:body graphdata)]
-    (if (#{:get :head} (:request-method request))
-      ;; It's a head or get, so we want to build a body explicitly.
-      (let [[content-type generator] (or (:content-handler graphdata)
-                                         (first (helpers/getres (s/content-types-provided handler
-                                                                                  request
-                                                                                  graphdata))))
-            body                     (if generator
-                                       (generator request graphdata)
-                                       "")]
-        [content-type body]))))
+
+(defn produce-body [body request graphdata]
+  (cond
+   (instance? clojure.lang.IFn body) (delay (body request graphdata))
+   :else                             (delay body)))
+
+(defn default-content-handler [handler request graphdata]
+  (let [[ct handler] (first (helpers/getres (s/content-types-provided handler
+                                                                      request
+                                                                      graphdata)))]
+    [ct (produce-body handler)]))
+
+
+(defn content-handler [handler request {{ct "Content-Type"} :headers
+                                        body :body :as graphdata}]
+  (if body
+    [(or ct "text/plain") (produce-body body request graphdata)]
+    (default-content-handler handler request graphdata)))
+
+(defn body-content [handler request graphdata]
+  (let [[content-type-name content-source] (content-handler handler request graphdata)]
+    [content-type-name (produce-body content-source)]))

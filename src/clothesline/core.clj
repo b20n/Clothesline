@@ -1,8 +1,6 @@
 (ns clothesline.core
   (:require [ring.adapter [jetty :as ring]]
-            clothesline.protocol.graph
             [clothesline [util :as util]])
-  
   (:use [clothesline.request-handler :only [compile-route-map handler *routes*]])
   (:import org.mortbay.jetty.Server)
   (:gen-class :name clothesline.interop.Factory

@@ -6,6 +6,7 @@
                  [ring "0.3.1"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
                      [clj-stacktrace "0.2.0"]]
+  :jvm-opts ["-agentlib:jdwp=transport=dt_socket,address=8021,server=y,suspend=n"]
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
         clothesline.service.base-service

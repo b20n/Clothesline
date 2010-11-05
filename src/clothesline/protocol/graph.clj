@@ -73,7 +73,7 @@
              (let [options-headers (or (getres (s/options handler request graphdata)) {})]
                {:status 200
                 :body ""
-                :headers options-headers})
+                :headers (getres options-headers)})
              (c3 args))))
 
  (defstate c3
@@ -88,9 +88,12 @@
            (let [available-handlers (getres (s/content-types-provided handler
                                                                       request
                                                                       graphdata))
-                 chosen  (map-accept-header request "accept" available-handlers)]
+                 [type generator :as chosen]  (map-accept-header request
+                                                                 "accept"
+                                                                 available-handlers)]
              (if chosen
-               (annotated-return true {:annotate {:content-handler chosen}})
+               (annotated-return true {:annotate {:body generator}
+                                       :headers  {"Content-Type" type}})
                false)))
    :yes d4
    :no  (stop-response 406))
@@ -135,9 +138,12 @@
            (let [available-handlers (getres (s/charsets-provided handler
                                                                  request
                                                                  graphdata))
-                 chosen  (map-accept-header request "accept-encoding" available-handlers)]
+                 [name encoder :as chosen]  (map-accept-header request
+                                                               "accept-encoding"
+                                                               available-handlers)]
              (if chosen
-               (annotated-return true {:annotate {:content-encoding chosen}})
+               (annotated-return true {:annotate {:content-encoding name
+                                                  :content-encoder  encoder}})
                false)))
    :yes g7
    :no (stop-response 406))
