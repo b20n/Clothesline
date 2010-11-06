@@ -1,4 +1,4 @@
-rs(ns clothesline.protocol.test-helpers
+(ns clothesline.protocol.test-helpers
   (:require [clojure.contrib [string :as strs]])
   (:import  clothesline.interop.nodetest.TestResult)
   (:use     [clothesline [util :only [get-with-key]]]))
@@ -47,7 +47,7 @@ rs(ns clothesline.protocol.test-helpers
     v))
 
 (defn getann [v]
-  (if (instance TestResult v)
+  (if (instance? TestResult v)
     (:annotations v)
     {}))
 
