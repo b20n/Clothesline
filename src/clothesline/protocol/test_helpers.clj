@@ -1,10 +1,12 @@
-(ns clothesline.protocol.test-helpers
+rs(ns clothesline.protocol.test-helpers
   (:require [clojure.contrib [string :as strs]])
   (:import  clothesline.interop.nodetest.TestResult)
   (:use     [clothesline [util :only [get-with-key]]]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Response Handler Helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn hv [request header]
   ((:headers request) header))
@@ -27,10 +29,13 @@
   ([request field map with-default?]
      (or (first (push-header-through request field map))
          (or  (get-with-key map "*/*") (get-with-key map "*"))
-         (and with-default? (first map))))
+         (when with-default? (first map))))
   ([request field map] (map-accept-header request field map true)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test return value
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn annotated-return
   ([result] (TestResult. result nil))
@@ -41,10 +46,17 @@
     (:result v)
     v))
 
+(defn getann [v]
+  (if (instance TestResult v)
+    (:annotations v)
+    {}))
+
 (defn getresann [v]
   (if (instance? TestResult v)
     ((juxt :result :annotations) v)
     [v nil]))
+
+
 
 (defn merge-annotations
   ([ann1] ann1)

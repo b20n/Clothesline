@@ -6,9 +6,36 @@
                test-helpers])
   (:require [clothesline [service :as s]]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Todo, fix this wit
+(defn accept-content-helper [handler request graphdata]
+  (let [handlers       (getres (s/content-types-accepted handler request graphdata))]
+    (if-let [[type body-handler] (map-accept-header request "Content-Type" handlers false)]
+      (do (body-handler request graphdata)
+          true)
+      false)))
+
+; P3 and O14 both share similar logic, represented here
+(defn conflict-states-helper [{:keys [handler request graphdata]}]
+  (let [conflict-rval (s/conflict? handler request graphdata)
+        conflict?     (getres conflict-rval)
+        handled?         (when-not conflict?
+                        (accept-content-helper handler request graphdata))]
+    (cond
+     conflict?    (annotated-return true)
+     handled?     (annotated-return false)
+     :unhandled?  (annotated-return {:status 415 :body nil :headers {}}))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Protocol Graph
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (protocol-machine
-
  (defstate b13
    "Check if service has been made unavailable. Return status 503 if not."
    :test (call-on-handler s/service-available?)
@@ -317,27 +344,39 @@
  (defstate n5
    :test (call-on-handler s/allow-missing-post?)
    :no (stop-response 410)
-   :yes n11)
+   :yes n11) 
 
 
- 
+ ;; State N11 is something of a bear, unfortuantely. 
  (defn n11-helper [{:keys [handler request graphdata]}]
-   (let [[is-create? s1-anns] (getresann (s/post-is-create? handler request graphdata))
+   (let [[is-create? s1-anns] (getresann (s/post-is-create? handler
+                                                            request
+                                                            graphdata))
          igraphdata (update-graphdata-with-anns graphdata s1-anns)]
      (if is-create?
        (let [[cpath s2-anns] (getresann (s/create-path handler request igraphdata))
-             merged-anns (merge-annotations s1-anns s2-anns {:annotate {:post-created-path cpath
-                                                                        :post-status true}
-                                                             :headers {"Location" cpath}})]
-         (annotated-return (boolean (-> igraphdata :headers (get "Location"))) merged-anns))
-       (let [[post-status s2-anns] (getresann (s/process-post handler request igraphdata))
              merged-anns (merge-annotations s1-anns
-                                             s2-anns
-                                             {:annotate {:post-status post-status}})
+                                            s2-anns
+                                            {:annotate {:post-created-path cpath
+                                                        :post-status true}
+                                             :headers {"Location" cpath}})
              final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
+         (if (accept-content-helper handler reuqest igraphdata-prime)
+           (annotated-return (:post-is-redirect final-graphdata)
+                             merged-anns)
+           {:status 415 :headers {}})) ; Bail out if we couldn't make it work.
+       (let [[post-status s2-anns] (getresann (s/process-post handler
+                                                              request
+                                                              igraphdata))
+             merged-anns (merge-annotations s1-anns
+                                            s2-anns
+                                            {:annotate {:post-status post-status}})
+             final-graphdata (update-graphdata-with-anns graphdata
+                                                         merged-anns)]
          (annotated-return (boolean (and (-> final-graphdata :headers (get "Location"))
                                          (:post-is-redirect final-graphdata)))
                            merged-anns)))))
+
 
  (defstate n11
    :test n11-helper
