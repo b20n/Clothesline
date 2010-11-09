@@ -31,15 +31,19 @@
   "Selects the appropriate place to route the request based on the supplied map"
   (first (keep #(match-route req (first %) (second %)) route-map)))
 
+(defn run-request [handler request]
+  (g/start {:handler handler
+            :request request
+            :graphdata {}}))
+
 (defn base-handler [req]
   "Slim little shim for getting the route and doing something with it"
   (if-let [[req handler new-params] (get-route *routes* req)]
-    (g/start {:handler handler
-              :request (-> req
-                           (assoc :url-params new-params)
-                           (assoc :params (merge (:params req)
-                                                 new-params)))
-              :graphdata {}})
+    (run-request handler
+                 (-> req
+                     (assoc :url-params new-params)
+                     (assoc :params (merge (:params req)
+                                           new-params))))
     (no-handler-found req)))
 
 (def ^{:doc "The default, normally-wrapped handler. Includes query and param mapping.",

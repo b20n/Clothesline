@@ -32,6 +32,7 @@
       (merge (dissoc annotate :headers))))
 
 (declare gen-test-forms gen-body-forms)
+(def *debug* false) ; If set to true, writes state progression to stdout
 (def *debug-mode-runone* false)   ; If set to true, the state doesn't progress, but rather
                                   ;  stops immediately with a processing dump.
 (def *current-state* ::none)
@@ -58,8 +59,9 @@
                          ~(:yes opts)
                          ~(:no opts))
                forward-args# (assoc args# :graphdata ndata#)]
-           (println "Intermediate (" ~(:name opts) ")" test-result#)
-           (println "  :: " forward-args#)
+           (when *debug*
+             (println "Intermediate (" ~(:name opts) ")" test-result#)
+             (println "  :: " forward-args#))
            (cond
             *debug-mode-runone*
                                 forward-args#

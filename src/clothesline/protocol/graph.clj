@@ -15,7 +15,6 @@
 ; It'd be nice if eventually this generated the header we need.
 (defn accept-content-helper [handler request graphdata]
   (let [handlers (getres (s/content-types-accepted handler request graphdata))]
-    (println "Looking for " (-> request :headers (get "content-type")) " in: " handlers)
     (if-let [[type body-handler] (map-accept-header request "content-type" handlers false)]
       (do        
         (body-handler request graphdata)
