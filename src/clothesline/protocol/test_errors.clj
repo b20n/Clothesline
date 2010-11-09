@@ -2,7 +2,6 @@
   (:require [clojure.contrib [error-kit :as error]]
             [clothesline.protocol.syntax]))
 
-
 (error/deferror test-breakout-error []
   "When a test precondition is violated, it can throw this exception
    to force an immedaite halt of all processing. The response shown is

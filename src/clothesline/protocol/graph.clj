@@ -1,10 +1,12 @@
 (ns clothesline.protocol.graph
   (:use [clothesline.protocol
-               syntax
-               response-helpers
-               graph-helpers
-               test-helpers])
-  (:require [clothesline [service :as s]]))
+         syntax
+         response-helpers
+         graph-helpers
+         test-helpers
+         test-errors])
+  (:require [clothesline [service :as s]]
+            [clojure.contrib [error-kit :as error-kit]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -12,10 +14,11 @@
 
 ; Todo, fix this wit
 (defn accept-content-helper [handler request graphdata]
-  (let [handlers       (getres (s/content-types-accepted handler request graphdata))]
+  (let [handlers (getres (s/content-types-accepted handler request graphdata))]
     (if-let [[type body-handler] (map-accept-header request "Content-Type" handlers false)]
-      (do (body-handler request graphdata)
-          true)
+      (do        
+        (body-handler request graphdata)
+        true)
       false)))
 
 ; P3 and O14 both share similar logic, represented here
@@ -23,11 +26,11 @@
   (let [conflict-rval (s/conflict? handler request graphdata)
         conflict?     (getres conflict-rval)
         handled?         (when-not conflict?
-                        (accept-content-helper handler request graphdata))]
+                           (accept-content-helper handler request graphdata))]
     (cond
      conflict?    (annotated-return true)
      handled?     (annotated-return false)
-     :unhandled?  (annotated-return {:status 415 :body nil :headers {}}))))
+     :unhandled?  (breakout-of-test 415))))
 
 
 
@@ -272,7 +275,7 @@
    :no o18)
 
  (defstate o14
-   :test (call-on-handler s/conflict?)
+   :test conflict-states-helper
    :yes (stop-response 409)
    :no  p11)
 
@@ -361,10 +364,12 @@
                                                         :post-status true}
                                              :headers {"Location" cpath}})
              final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
-         (if (accept-content-helper handler reuqest igraphdata-prime)
-           (annotated-return (:post-is-redirect final-graphdata)
-                             merged-anns)
-           {:status 415 :headers {}})) ; Bail out if we couldn't make it work.
+         (if (accept-content-helper handler request final-graphdata)
+           (do (println "act returned positive")
+               (annotated-return (:post-is-redirect final-graphdata)
+                                 merged-anns))
+           (do (println "Done goofed.")                           ; Bail out if we couldn't make it work.
+               (breakout-of-test 415))))
        (let [[post-status s2-anns] (getresann (s/process-post handler
                                                               request
                                                               igraphdata))
@@ -389,7 +394,7 @@
    :no  o20)
 
  (defstate p3
-   :test (call-on-handler s/conflict?)
+   :test conflict-states-helper
    :yes (stop-response 409)
    :no p11)
  
@@ -399,6 +404,10 @@
                                               :headers  {"fart" "true"}}))
    :yes :respond
    :no {:status 500, :body "Epic fail."})
+
+ (defstate test-fail-state
+   :test (fn [& args] (breakout-of-test 999)))
+ 
  ) ; Protocol machine v3.
 
   (def start #'b13)
