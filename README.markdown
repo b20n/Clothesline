@@ -40,7 +40,7 @@ interfaces without having to worry about correctness.
 
 BankSimple's stack is also multi-lingual, using Scala, Clojure, and
 JRuby. It's important for our development efforts to have a plays-well-with-others project where code can be shared between languages. We think that JVM language crosstalk is going to
-be a major asset for us moving, and increasingly you see other
+be a major asset for us, and increasingly you see other
 companies talking about similar experiments. Maybe we're on to
 something. Clothesline is a way of finding out.
 
