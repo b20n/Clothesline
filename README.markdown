@@ -22,11 +22,11 @@ Clothesline uses [Ring](http://github.com/mmcgrana/ring) and
 base over a variety of web servers (although the default is
 Jetty). Much like other Ring-based libraries, Clothesline takes a
 routing table and routes it to handlers. Unlike other libraries which
-simply plass the request to a naive handler function, Clothesline
+simply pass the request to a naive handler function, Clothesline
 moves across a graph of HTTP 1.1 behavior, using your request and the
 routed handler to make specific decisions about how to proceed. The
 final product of the request is ultimately determined by the graph and
-the intermedia products of this interrogation.
+the intermediate products of this interrogation.
 
 #### Why Are You Making It? ####
 
@@ -108,14 +108,14 @@ a Map. The map respects two keys:
   later in the documentation for some keys of interest for annotation.
 * headers: (should contain a dictionary of string to string). This
   dictionary will be appended to the graphdata response headers
-  outside of the normal http logic, in
+  outside of the normal HTTP logic, in
   `(:headers graphdata)`. The most common header values to insert are
   responses like "Location". 
   
 -----  
 Please note that some common headers such as Content-Length and
 Content-Type should be automatically generated for you, unless your
-handler is unusual. Content-Length, in particular, can be disasterous 
+handler is unusual. Content-Length, in particular, can be disastrous 
 to modify since most browsers hang  when confronted with an
 over-large Content-Length header.
 
@@ -138,7 +138,7 @@ salient permission data for this request's authorization.
 
 When architecting your restful services, try and keep your logic
 organized around these functions. If you do so, it will result in
-higher code reusability and a cleaner, clearer architecture.
+higher code re-usability and a cleaner, clearer architecture.
 
 ### Departures from WebMachine ###
 
@@ -164,7 +164,7 @@ amongst states and passed to every handler test.
 The graphdata structure contain annotations and the sum of the headers
 that should be explicitly added. These values can be directly
 specified with annotations. If a test called later in the graph specifies a value that
-contradicts an earlier value, the later specification overides the
+contradicts an earlier value, the later specification overrides the
 earlier one. It is important to note that these values are special,
 but not the only allowed values. *Any key and value is a valid
 annotation!* 
@@ -182,7 +182,7 @@ body entry is set, it will override implicit body generation when applicable.
 `:content-encoder` The content encoding function is not currently
 used, but is set. In future releases it will work.
 
-`:content-converter` The conent converting function is not currently
+`:content-converter` The content converting function is not currently
 used.
 
 
@@ -191,7 +191,7 @@ used.
 * Currently, date-related states in the HTTP graph do not work
 properly. 
 
-* Encoding and charset changes also do not work correctly. All Charsets
+* Encoding and charset changes also do not work correctly. All charsets
 should be utf-8 for now.
 
 * Data from `content-types-provided` and `content-types-accepted` is
@@ -212,9 +212,18 @@ See `test/clothesline/complex-server.clj` for a more complete
 demonstration. `clothesline.core` has functions for generating servers
 and handlers as necessary. 
 
+### Inter-operation With Other Languages ###
+
+As stated, one of our goals with Clothesline is to allow most JVM
+languages to express Clothesline handlers. The simple way to do this
+is to provide instances of objects that conform to
+`clothesline.interop.IService.` To make this easier, there is a base
+class named `clothesline.service.BaseService` that provides the same
+default behaviors that the default protocol provides.
+
 ## Installation
 
 You struggle through for now with a hand-managed jar. Soon we'll have
-a BankSimple opensource Maven Repo and we'll make sure to have an
-entry in clojars.
+a BankSimple open source Maven Repo and we'll make sure to have an
+entry in Clojars.
 
