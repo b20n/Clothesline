@@ -28,6 +28,23 @@ routed handler to make specific decisions about how to proceed. The
 final product of the request is ultimately determined by the graph and
 the intermedia products of this interrogation.
 
+#### Why Are You Making It? ####
+
+We are using it to prototype RESTful services for our banking
+APIs. Clojure and Scala both have excellent web frameworks, but
+they're not especially oriented towards designing APIs with correct
+HTTP 1.1 behavior. WebMachine, while slightly more awkward than some
+web frameworks for content delivery, is superb for designing RESTful
+interfaces without having to worry about correctness.
+
+BankSimple's stack is also multi-lingual, using Scala, Clojure and
+JRuby. A plays-well-with-others project where code could be shared
+between the three languages is an important proof of concept for our
+development efforts. We think that JVM-language crosstalk is going to
+be a major asset to us moving forwards, and increasingly you see other
+companies talking about similar experiments. Maybe we're on to
+something.
+
 ### A Simple Example ###
 
 Using the `defsimplehandler` in `clothesline.service.helpers` we can
@@ -130,13 +147,14 @@ noted. The most obvious is the content-types-provided and
 content-types-accepted. These are maps of content-type-string to
 function, but the functions are different. They *must* take two
 arguments: the ring request and the current graphdata. The *must*
-return a simple string. There are plans to allow for other return
-types (in particular: threads, streams, delay and future objects,
+return a simple string or a function that evaluates to a simple string. 
+There are plans to allow for other return types (in particular: threads, streams, delay and future objects,
 etc), but they are currently not supported.
 
 `allowed-methods` should return a Set as opposed to a List.
 
 `finish-request`'s return values are ignored.
+
 
 ## Meaningful Keys For Annotation ##
 
@@ -151,13 +169,21 @@ earlier one. It is important to note that these values are special,
 but not the only allowed values. *Any key and value is a valid
 annotation!* 
 
-:headers
-:body 
-:content-type
-:content-encoding
-:content-encoder
-:content-charset
-:content-converter
+`:headers` This is a string-string map of header values. Please note
+that headers are case-sensitive. The headers map is used by the graph
+logic to store values such as Content-Type.
+
+`:body` This value is the current body computation. Currently, it must
+be function evaluating to a string or just a string. If the body is a
+function, it will be passed the request and graphdata objects (much
+like the `content-types-provided` elements will be. If an explicit
+body entry is set, it will override implicit body generation when applicable.
+
+`:content-encoder` The content encoding function is not currently
+used, but is set. In future releases it will work.
+
+`:content-converter` The conent converting function is not currently
+used.
 
 
 ## Further Work Towards Completeness ##
@@ -168,10 +194,8 @@ properly.
 * Encoding and charset changes also do not work correctly. All Charsets
 should be utf-8 for now.
 
-* `content-types-accepted` does not work as one might expect.
-
-* There is still some remaining work to be done with paths leading to
-state N11.
+* Data from `content-types-provided` and `content-types-accepted` is
+  not checked during header generation.
 
 * This implementation was spiked, so per-state tests are forthcoming.
 
@@ -182,18 +206,15 @@ state N11.
 * The graphdata requires some updates for consistency.
 
 
-
-
 ## Usage
 
-FIXME: write
+See `test/clothesline/complex-server.clj` for a more complete
+demonstration. `clothesline.core` has functions for generating servers
+and handlers as necessary. 
 
 ## Installation
 
-FIXME: write
+You struggle through for now with a hand-managed jar. Soon we'll have
+a BankSimple opensource Maven Repo and we'll make sure to have an
+entry in clojars.
 
-## License
-
-Copyright (C) 2010 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
