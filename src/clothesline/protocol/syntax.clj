@@ -1,6 +1,8 @@
 (ns clothesline.protocol.syntax
-  (:use [clojure.contrib.macro-utils]
-        [clothesline.protocol [response-helpers]])
+  (:use [clojure.contrib macro-utils
+                         error-kit]
+        [clothesline.protocol response-helpers
+                              test-errors])
   (:require [clothesline.protocol [test-helpers :as test-helpers]]))
 
 (defmacro protocol-machine [& forms]
@@ -32,6 +34,7 @@
 (declare gen-test-forms gen-body-forms)
 (def *debug-mode-runone* false)   ; If set to true, the state doesn't progress, but rather
                                   ;  stops immediately with a processing dump.
+(def *current-state* ::none)
 
 (defmacro state [& {:as state-opts}]
   (let [has-body? (:body state-opts)]
@@ -44,27 +47,33 @@
     `(fn [& [ {request# :request
                handler# :handler
                graphdata# :graphdata :as args#}]]
-       (let [test# ~(:test opts)
-             test-result# (test# args#)
-             [result# ndata#] (test-helpers/result-and-graphdata
-                               test-result#
-                               graphdata#)
-             plan#   (if result#
+       (with-handler
+         (let [test# ~(:test opts)
+               test-result# (binding [*current-state* ~(:name opts)]
+                              (test# args#))
+               [result# ndata#] (test-helpers/result-and-graphdata
+                                 test-result#
+                                 graphdata#)
+               plan#   (if result#
                          ~(:yes opts)
                          ~(:no opts))
-             forward-args# (assoc args# :graphdata ndata#)]
+               forward-args# (assoc args# :graphdata ndata#)]
            (println "Intermediate (" ~(:name opts) ")" test-result#)
            (println "  :: " forward-args#)
            (cond
             *debug-mode-runone*
-                           forward-args#
+                                forward-args#
             (map? plan#)
-                           plan# ; If it's a map, return it.
+                                plan#                       ; If it's a map, return it.
             (instance? java.util.concurrent.Callable plan#)
-                           (apply plan#
-                                  (list forward-args#)) ; If it's invokable, invoke it.
-            :default plan#)))))
-
+                               (apply plan#
+                                      (list forward-args#)) ; If it's invokable, invoke it.
+            :default
+            plan#))
+         (handle test-breakout-error {code# :code
+                                      headers# :headers
+                                      body#    :body}
+                 {:status code# :headers headers# :body body#})))))
 
 
 (defn gen-body-forms [state-opts] (:body state-opts))
