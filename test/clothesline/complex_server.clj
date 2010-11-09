@@ -2,7 +2,8 @@
   (:require [clothesline.service :as service]
             [clothesline.service.helpers :as helpers]
             [clothesline.protocol.test-helpers :as test]
-            clothesline.core))
+            clothesline.core)
+  (:require [clojure.contrib.duck-streams :as duck]))
 
 ;; Storage
 (def *url-store* (ref {}))
@@ -14,7 +15,7 @@
 
 ;; Behavior
 (def behavior
-     {:allowed-methods (constantly #{:get :post})
+     {:allowed-methods (constantly #{:get :post :put})
       :malformed-request? (fn [_ {:keys [request-method params]} _]
                             (let [name (params "name")
                                   location (params "location")]
@@ -25,14 +26,22 @@
       :previously-existed? (fn [_ {params :params} _] (get-name-url (params "name")))
       :resource-exists? (constantly false)
       :allow-missing-post? (constantly true)
-      :moved-permanently? (fn [_ {params :params} _] (get-name-url (params "name")))
+      :moved-permanently? (fn [_ {params :params method :request-method} _]
+                            
+                            (if (= method :put)
+                              false
+                              (get-name-url (params "name"))))
       :post-is-create? (fn [_ {params :params} _] (not (name-exists? (params "name"))))
-      :create-path (fn [_ {{:strs [name location]} :params} _]
-                     (add-name-url name location)
-                     (test/annotated-return name))
+      :create-path (fn [_ {{:strs [name]} :params} _] (test/annotated-return (str "/" name)))
       :process-post (fn [_ {{:strs [name location]} :params :as request} _]
                          (add-name-url name location)
                          (test/annotated-return true))
+
+      ;; This is mostly just to handle params
+      :content-types-accepted (fn [& _]
+                                {"*/*" (fn [{params :params body :body} _]
+                                         (add-name-url (params "name")
+                                                       (params "location")))})
      }
 
 )
@@ -41,6 +50,7 @@
 (helpers/extend-as-handler bookmark-handler behavior)
 
 ;; Server
+
 
 (defonce *server* (clothesline.core/produce-server {"/:name" (bookmark-handler.)} 
                                                    {:join? false :port 9001}))

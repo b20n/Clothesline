@@ -12,10 +12,11 @@
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Todo, fix this wit
+; It'd be nice if eventually this generated the header we need.
 (defn accept-content-helper [handler request graphdata]
   (let [handlers (getres (s/content-types-accepted handler request graphdata))]
-    (if-let [[type body-handler] (map-accept-header request "Content-Type" handlers false)]
+    (println "Looking for " (-> request :headers (get "content-type")) " in: " handlers)
+    (if-let [[type body-handler] (map-accept-header request "content-type" handlers false)]
       (do        
         (body-handler request graphdata)
         true)
@@ -32,6 +33,37 @@
      handled?     (annotated-return false)
      :unhandled?  (breakout-of-test 415))))
 
+ ;; State N11 is something of a bear, unfortuantely. 
+ (defn n11-helper [{:keys [handler request graphdata]}]
+   (let [[is-create? s1-anns] (getresann (s/post-is-create? handler
+                                                            request
+                                                            graphdata))
+         igraphdata (update-graphdata-with-anns graphdata s1-anns)]
+     (if is-create?
+       (let [[cpath s2-anns] (getresann (s/create-path handler request igraphdata))
+             merged-anns (merge-annotations s1-anns
+                                            s2-anns
+                                            {:annotate {:post-created-path cpath
+                                                        :post-status true}
+                                             :headers {"Location" cpath}})
+             final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
+         (if (accept-content-helper handler request final-graphdata)
+           (do (println "act returned positive")
+               (annotated-return (:post-is-redirect final-graphdata)
+                                 merged-anns))
+           (do (println "Done goofed.")                           ; Bail out if we couldn't make it work.
+               (breakout-of-test 415))))
+       (let [[post-status s2-anns] (getresann (s/process-post handler
+                                                              request
+                                                              igraphdata))
+             merged-anns (merge-annotations s1-anns
+                                            s2-anns
+                                            {:annotate {:post-status post-status}})
+             final-graphdata (update-graphdata-with-anns graphdata
+                                                         merged-anns)]
+         (annotated-return (boolean (and (-> final-graphdata :headers (get "Location"))
+                                         (:post-is-redirect final-graphdata)))
+                           merged-anns)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -348,40 +380,6 @@
    :test (call-on-handler s/allow-missing-post?)
    :no (stop-response 410)
    :yes n11) 
-
-
- ;; State N11 is something of a bear, unfortuantely. 
- (defn n11-helper [{:keys [handler request graphdata]}]
-   (let [[is-create? s1-anns] (getresann (s/post-is-create? handler
-                                                            request
-                                                            graphdata))
-         igraphdata (update-graphdata-with-anns graphdata s1-anns)]
-     (if is-create?
-       (let [[cpath s2-anns] (getresann (s/create-path handler request igraphdata))
-             merged-anns (merge-annotations s1-anns
-                                            s2-anns
-                                            {:annotate {:post-created-path cpath
-                                                        :post-status true}
-                                             :headers {"Location" cpath}})
-             final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
-         (if (accept-content-helper handler request final-graphdata)
-           (do (println "act returned positive")
-               (annotated-return (:post-is-redirect final-graphdata)
-                                 merged-anns))
-           (do (println "Done goofed.")                           ; Bail out if we couldn't make it work.
-               (breakout-of-test 415))))
-       (let [[post-status s2-anns] (getresann (s/process-post handler
-                                                              request
-                                                              igraphdata))
-             merged-anns (merge-annotations s1-anns
-                                            s2-anns
-                                            {:annotate {:post-status post-status}})
-             final-graphdata (update-graphdata-with-anns graphdata
-                                                         merged-anns)]
-         (annotated-return (boolean (and (-> final-graphdata :headers (get "Location"))
-                                         (:post-is-redirect final-graphdata)))
-                           merged-anns)))))
-
 
  (defstate n11
    :test n11-helper

@@ -47,10 +47,6 @@
     `(fn [& [ {request# :request
                handler# :handler
                graphdata# :graphdata :as args#}]]
-
-       ;; TODO, surround in an error handler. The test has to be able to
-       ;; bail out.
-
        (with-handler
          (let [test# ~(:test opts)
                test-result# (binding [*current-state* ~(:name opts)]
@@ -76,7 +72,7 @@
             plan#))
          (handle test-breakout-error {code# :code
                                       headers# :headers
-                                      body#    :body :as things#}
+                                      body#    :body}
                  {:status code# :headers headers# :body body#})))))
 
 
