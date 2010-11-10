@@ -3,7 +3,7 @@
 ## Introduction ##
 
 Clothesline is a port of the popular HTTP service framework
-[WebMachine](http://bitbucket.org/justin/webmachine/wiki/Home) in
+[WebMachine](https://github.com/basho/webmachine) in
 Clojure, with provisions for use in Scala and Java. It is currently a
 naive port; it closely mimics the WebMachine module signature (as a
 Java interface) and execution mode, even down to the [graph model and
