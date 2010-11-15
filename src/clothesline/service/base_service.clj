@@ -1,5 +1,5 @@
 (ns clothesline.service.base-service
-  (:use [clothesline.protocol [test-helpers :only [annotated-return]]])
+  (:use [clothesline.protocol [test-helpers :only [annotated-return getres]]])
   (:gen-class
     :name clothesline.service.BaseService
     :implements [clothesline.interop.IService]))
@@ -27,6 +27,14 @@
   (annotated-return false))
 
 (defn -knownContentType [self request graphdata]
+  (let [known-types (getres (.contentTypesAccepted  self
+                                                    request
+                                                    graphdata))
+        tset        (set (keys known-types))
+        r-ctype     (:content-type request)]
+    (if r-ctype
+      (or (tset r-ctype) (tset "*/*"))
+      true))
   (annotated-return true))
 
 (defn -validContentHeaders [self request graphdata]

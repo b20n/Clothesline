@@ -1,4 +1,5 @@
 (ns clothesline.service
+  (:use clothesline.protocol.test-helpers)
   (:import clothesline.interop.IService))
 
 (defprotocol service
@@ -49,35 +50,73 @@
 (def service-default
 {
  :resource-exists? (fn [self request graphdata] true)
+ 
  :service-available? (fn [self request graphdata] true)
+ 
  :authorized? (fn [self request graphdata] true)
+
  :forbidden? (fn [self request graphdata] false)
+
  :allow-missing-post? (fn [self request graphdata] false)
+
  :malformed-request? (fn [self request graphdata] false)
+
  :uri-too-long? (fn [self request graphdata] false)
- :known-content-type? (fn [self request graphdata] true)
+
+ :known-content-type? (fn [self request graphdata]
+                        (let [known-types (getres (content-types-accepted self
+                                                                          request
+                                                                          graphdata))
+                              tset        (set (keys known-types))
+                              r-ctype     (:content-type request)]
+                          (if r-ctype
+                            (or (tset r-ctype) (tset "*/*"))
+                            true)))
+
  :valid-content-headers? (fn [self request graphdata] true)
+
  :valid-entity-length? (fn [self request graphdata] true)
+
  :options (fn [self request graphdata] nil)
+
  :allowed-methods (fn [self request graphdata] #{:get :head})
+
  :delete-resource (fn [self request graphdata] false)
+
  :delete-completed? (fn [self request graphdata] true)
+
  :post-is-create? (fn [self request graphdata] false)
+
  :create-path (fn [self request graphdata] false)
+
  :process-post (fn [self request graphdata] false)
+
  :content-types-provided (fn [self request graphdata] {"text/html" (constantly nil)})
+
  :content-types-accepted (fn [self request graphdata] {})
+
  :charsets-provided (fn [self request graphdata] nil)
+
  :encodings-provided (fn [self request graphdata] nil)
+
  :variances (fn [self request graphdata] nil)
+
  :conflict? (fn [self request graphdata] false)
+
  :multiple-choices? (fn [self request graphdata] false)
+
  :previously-existed? (fn [self request graphdata] false)
+
  :moved-permanently? (fn [self request graphdata] false)
+
  :moved-temporarily? (fn [self request graphdata] false)
+
  :last-modified (fn [self request graphdata] nil)
+
  :expires (fn [self request graphdata] nil)
+
  :generate-etag (fn [self request graphdata] nil)
+
  :finish-request (fn [self request graphdata] true)
 })
 
