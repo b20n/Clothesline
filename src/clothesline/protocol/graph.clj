@@ -4,7 +4,8 @@
          response-helpers
          graph-helpers
          test-helpers
-         test-errors])
+         test-errors]
+        [clj-time [core :only [after?]]])
   (:require [clothesline [service :as s]]
             [clojure.contrib [error-kit :as error-kit]]))
 
@@ -238,10 +239,25 @@
 
  (defstate h10
    :test (request-header-exists? "if-unmodified-since")
-                                        ; :yes h11 ; TODO: Re-enable this
-   :yes i12 ; TODO: Un-ignore the date headers.
+   :yes h11 
    :no i12)
 
+ (defstate h11
+   :test (fn [_ request _]
+           (if-let [date (date-for-request-header request "if-unmodified-since")]
+             (annotated-return true {:if-unmodified-since date})))
+   :yes h12
+   :no i12)
+
+ (defstate h12
+   :test (fn [h req {date :if-unmodified-since :as gd}]
+           (if-let [[v ann] (getresann (s/last-modified h req gd))]
+             (annotated-return (after? v date)
+                               ann)
+             false))
+   :yes (stop-response 412)
+   :no  i12)
+ 
  (defstate i12
    :test (request-header-exists? "if-none-match")
    :yes i13

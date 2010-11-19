@@ -1,7 +1,8 @@
 (ns clothesline.protocol.test-helpers
   (:require [clojure.contrib [string :as strs]])
   (:import  clothesline.interop.nodetest.TestResult)
-  (:use     [clothesline [util :only [get-with-key]]]))
+  (:use     [clothesline [util :only [get-with-key
+                                      date-timezone-from-string]]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,6 +32,13 @@
          (or  (get-with-key map "*/*") (get-with-key map "*"))
          (when with-default? (first map))))
   ([request field map] (map-accept-header request field map true)))
+
+
+(defn date-for-request-header [request header-name]
+  (when-let [val (-> request :headers (get (.toLowerCase header-name)))]
+    (when-let [[t tz] (date-timezone-from-string val)]
+      (when (#{"UTC" "GMT"} tz)
+        t))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
