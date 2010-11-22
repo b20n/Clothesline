@@ -5,7 +5,7 @@
          graph-helpers
          test-helpers
          test-errors]
-        [clj-time [core :only [after?]]])
+        [clj-time [core :only [after? now]]])
   (:require [clothesline [service :as s]]
             [clojure.contrib [error-kit :as error-kit]]))
 
@@ -284,9 +284,28 @@
 
  (defstate l13
    :test (request-header-exists? "if-modified-since")
-   :yes m16 ; TODO: un-ignore date headers, this should go to L14
+   :yes l14
    :no m16)
 
+ (defstate l14
+   :test (fn [_ request _]
+           (if-let [date (date-for-request-header request "if-modified-since")]
+             (annotated-return true {:if-modified-since date}))))
+
+ (defstate l15
+   :test (fn [_ _ {ims-date :if-modified-since}]
+           (after? ims-date (now)))
+   :yes m16
+   :no l17)
+
+ (defstate l17
+   :test (fn [h req {ims-date :if-modified-since :as gd}]
+           (if-let [[lm-date ann] (getresann (s/last-modified h req gd))]
+             (annotated-return (after? lm-date ims-date) ann)
+             true)) ;; We kick to m16 if there is no last-modified date.
+                    ;; ... What? Do you have a better idea?
+   :yes m16
+   :no (stop-response 304))
 
  (defstate m16
    :test (request-method-is? :delete)
