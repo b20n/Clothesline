@@ -3,7 +3,7 @@
             [clothesline [service :as s]]
             [clothesline.protocol [test-helpers :as helpers]
                                   [body-helpers :as bh]])
-  (:use     [clothesline [util :only [assoc-if take-until]]]))
+  (:use     [clothesline [util :only [assoc-if take-until datetime-to-http11-string]]]))
 
 
 
@@ -31,25 +31,33 @@
         encoding-str (when enc (str "; charset" enc))]
     (str content-type-str encoding-str)))
 
+
+;; TODO: Rebuild this so that each request type is a set and all header building strategies
+;;       are represented as a seq. Otherwise this is only going to get more absurd over time.
 (defn build-normal-headers [handler
                      {method :request-method :as request}
                      graphdata
                      content-type
                      body]
-  (cond
-   (= :get method)
+  (let [etag-val          (helpers/getres (s/generate-etag handler request graphdata))
+        last-modified-val (helpers/getres (s/last-modified handler request graphdata))
+        expires-val       (helpers/getres (s/expires handler request graphdata))]
+    (cond
+     (= :get method)
      (-> {}
-        (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
-        (assoc-if "Content-Length" (str (count @body)) @body)
-        (assoc-if "ETag" (helpers/getres (s/generate-etag handler request graphdata)))
-        (assoc-if "Last-Modified" (helpers/getres (s/last-modified handler request graphdata)))
-        (assoc-if "Expires" (helpers/getres (s/expires handler request graphdata))))
-   (= :head method)
+         (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
+         (assoc-if "Content-Length" (str (count @body)) @body)
+         (assoc-if "ETag" (str etag-val) etag-val)
+         (assoc-if "Last-Modified" (datetime-to-http11-string last-modified-val) last-modified-val)
+         (assoc-if "Expires" (datetime-to-http11-string expires-val) expires-val))
+     
+     (= :head method)
      (-> {}
-       (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
-       (assoc-if "ETag" (helpers/getres (s/generate-etag handler request graphdata)))
-       (assoc-if "Last-Modified" (helpers/getres (s/last-modified handler request graphdata)))
-       (assoc-if "Expires" (helpers/getres (s/expires handler request graphdata))))))
+         (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
+         (assoc-if "ETag" (str etag-val) etag-val)
+         (assoc-if "Last-Modified" (datetime-to-http11-string last-modified-val) last-modified-val)
+         (assoc-if "Expires" (datetime-to-http11-string last-modified-val) expires-val)))))
+
 
   
 (defn generate-normal-response [code {:keys [handler request graphdata]}]
@@ -60,6 +68,7 @@
     ;; (println "--- BUILDING BODY! (" code ")\n---- Final Body:\n" final-body
     ;;          "\n---- Headers: " headers)
     (s/finish-request handler request graphdata) ; Currently ignored. Probably shouldn't be.
+    ;; (println "Final output: " {:status code :body final-body :headers headers})
     {:status code :body final-body :headers headers}))
 
 

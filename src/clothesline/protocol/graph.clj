@@ -48,11 +48,9 @@
                                              :headers {"Location" cpath}})
              final-graphdata (update-graphdata-with-anns graphdata merged-anns)]
          (if (accept-content-helper handler request final-graphdata)
-           (do (println "act returned positive")
-               (annotated-return (:post-is-redirect final-graphdata)
-                                 merged-anns))
-           (do (println "Done goofed.")                           ; Bail out if we couldn't make it work.
-               (breakout-of-test 415))))
+           (annotated-return (:post-is-redirect final-graphdata)
+                             merged-anns)
+           (breakout-of-test 415)))
        (let [[post-status s2-anns] (getresann (s/process-post handler
                                                               request
                                                               igraphdata))
@@ -243,14 +241,16 @@
    :no i12)
 
  (defstate h11
-   :test (fn [_ request _]
+   :test (fn [{request :request}]
            (if-let [date (date-for-request-header request "if-unmodified-since")]
-             (annotated-return true {:if-unmodified-since date})))
+             (annotated-return true {:annotate {:if-unmodified-since date}})))
    :yes h12
    :no i12)
 
  (defstate h12
-   :test (fn [h req {date :if-unmodified-since :as gd}]
+   :test (fn [{h :handler
+               req :request
+               {date :if-unmodified-since :as gd} :graphdata}]
            (if-let [[v ann] (getresann (s/last-modified h req gd))]
              (annotated-return (after? v date)
                                ann)
@@ -288,18 +288,23 @@
    :no m16)
 
  (defstate l14
-   :test (fn [_ request _]
+   :test (fn [{request :request}]
            (if-let [date (date-for-request-header request "if-modified-since")]
-             (annotated-return true {:if-modified-since date}))))
+             (annotated-return true {:annotate {:if-modified-since date}})
+             false))
+   :yes l15
+   :no m16)
 
  (defstate l15
-   :test (fn [_ _ {ims-date :if-modified-since}]
+   :test (fn [{{ims-date :if-modified-since :as graphdata} :graphdata}]
            (after? ims-date (now)))
    :yes m16
    :no l17)
 
  (defstate l17
-   :test (fn [h req {ims-date :if-modified-since :as gd}]
+   :test (fn [{h :handler
+               req :request
+               {ims-date :if-modified-since :as gd} :graphdata}]
            (if-let [[lm-date ann] (getresann (s/last-modified h req gd))]
              (annotated-return (after? lm-date ims-date) ann)
              true)) ;; We kick to m16 if there is no last-modified date.

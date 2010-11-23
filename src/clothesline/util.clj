@@ -1,5 +1,5 @@
 (ns clothesline.util
-  (:use [clj-time.format :only [parse formatter]]))
+  (:use [clj-time.format :only [parse formatter unparse]]))
 
 (defn get-with-key [map key]
   (when-let [v (get map key)]
@@ -23,17 +23,23 @@
              col))
   ([f col] (map-keys f col false)))
 
-(defn- pre-and-unparse-date [pre formatter string]
+;; Date and time manipulation
+
+(defn datetime-to-http11-string [datetime]
+  (str  (unparse (formatter "E, d MMM Y H:m:s") datetime) " GMT"))
+
+(defn- pre-and-parse-date [pre formatter string]
   "Expects pre to return a vector, [v, data]. Returns [(unparse formatter v), data].
    If nil is returned from pre, it is propagated. If unparse fails, also returns nil."
-  (when-let [[v data] (pre string)]
+  (when-let [[v data :as whole] (pre string)]
     (try 
       [(parse formatter v) data]
       (catch IllegalArgumentException e
         nil))))
 
 (defn- split-out-timezone [str]
-  (rest (re-matches #"^(.*) ([A-Z]{3})$" str)))
+  (when-let [matches (re-matches #"^(.*) ([A-Z]{3})$" str)]
+    (rest matches)))
 
 (defonce date-parsing-strategies
   (list
@@ -51,5 +57,6 @@
   [string]
   (first (keep
           (fn [[pre fmt]]
-            (pre-and-unparse-date pre fmt string))
+            (pre-and-parse-date pre fmt string))
           date-parsing-strategies)))
+
