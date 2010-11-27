@@ -1,4 +1,4 @@
-(defproject Clothesline "1.0.0-SNAPSHOT"
+(defproject clothesline "1.0.0-SNAPSHOT"
   :description "A Clojure port of the Erlang project WebMachine, a stateful HTTP service library."
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
@@ -6,7 +6,8 @@
                  [ring "0.3.1"]
                  [clj-time "0.2.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
-                     [clj-stacktrace "0.2.0"]]
+                     [clj-stacktrace "0.2.0"]
+                     [lein-clojars "0.5.0-SNAPSHOT"]]
   :jvm-opts ["-agentlib:jdwp=transport=dt_socket,address=8030,server=y,suspend=n"]
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
