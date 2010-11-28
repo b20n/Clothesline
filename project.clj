@@ -1,4 +1,4 @@
-(defproject clothesline "1.0.0-SNAPSHOT"
+(defproject clothesline "0.1.0-SNAPSHOT"
   :description "A Clojure port of the Erlang project WebMachine, a stateful HTTP service library."
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
