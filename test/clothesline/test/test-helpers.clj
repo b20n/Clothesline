@@ -1,7 +1,11 @@
 (ns clothesline.test.test-helpers
-  (:require [clojure.walk :as walk])
+  (:require [clojure.walk :as walk]
+            [clothesline.protocol graph
+             [syntax :as syntax]]
+            [clothesline.service :as cl])
   (:import java.io.StringBufferInputStream))
 
+;; Making requests
 
 (defn- make-body [contents]
   (StringBufferInputStream. contents))
@@ -43,4 +47,26 @@
                   :params querymap
                   :request-method *method*)))
 
+;; Handlers
+
+;; TODO: Reify.
+(def default-handler nil)
+
+;; Running states
+
+(def *machine-namespace* (find-ns 'clothesline.protocol.graph))
+(defn- find-state [sym]
+     (if-let [loc-var (get (ns-publics *machine-namespace*) sym)]
+       sym
+       identity))
+
+(defn- run-state-testing [state-sym args]
+  (binding [syntax/*debug-mode-runone* true]
+    (apply (find-state state-sym) args)))
+
+(defn test-state [state-sym & {:as args}]
+  (let [default-args {:request (make-request nil)
+                      :handler default-handler
+                      :graphdata {}}]
+    (run-state-testing state-sym (merge default-args args))))
 
