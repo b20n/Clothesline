@@ -1,5 +1,6 @@
 (ns clothesline.request-handler
   (:require [clothesline.protocol [graph :as g]]
+            [clothesline.service :as handler]
             [clothesline.util :as util])
   (:use [ring.util.response]
         [ring.middleware (params :only [wrap-params])]
@@ -36,10 +37,16 @@
             :request request
             :graphdata {}}))
 
+(defn as-handler [val]
+  (cond
+   (satisfies? handler/service val) val
+   (fn? val) (val)
+   (instance? java.lang.Class val) (.newInstance val)))
+
 (defn base-handler [req]
   "Slim little shim for getting the route and doing something with it"
-  (if-let [[req handler new-params] (get-route *routes* req)]
-    (run-request handler
+  (if-let [[req handler-entry new-params] (get-route *routes* req)]
+    (run-request (as-handler handler-entry)
                  (-> req
                      (assoc :url-params new-params)
                      (assoc :params (merge (:params req)
