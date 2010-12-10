@@ -59,7 +59,7 @@
                          ~(:yes opts)
                          ~(:no opts))
                forward-args# (assoc args# :graphdata ndata#)]
-           (when *debug*
+           (when (or  *debug* (:debug-output graphdata#))
              (println "Intermediate (" ~(:name opts) ")" test-result#)
              (println "  :: " forward-args#))
            (cond
