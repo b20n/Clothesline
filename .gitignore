@@ -3,6 +3,9 @@ pom.xml
 lib
 classes
 *~
-
 .DS_Store
 /target/
+.idea/
+*.iml
+*.ipr
+*.iws
