@@ -88,7 +88,7 @@
 (defn -previouslyExisted [self request graphdata]
   (annotated-return false))
 
-(defn -movedPermantently [self request graphdata]
+(defn -movedPermanently [self request graphdata]
   (annotated-return false))
 
 (defn -lastModified [self request graphdata]
