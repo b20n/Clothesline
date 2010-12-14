@@ -15,7 +15,11 @@
 
 ;; Behavior
 (def behavior
-     {:allowed-methods (constantly #{:get :post :put})
+     {:allowed-methods (fn [_ _ _]
+                         (test/annotated-return #{:get :post :put}
+                                                {:annotate {:debug-output
+                                                            (fn [_] (println "o/~"))}}))
+      
       :malformed-request? (fn [_ {:keys [request-method params]} _]
                             (let [name (params "name")
                                   location (params "location")]

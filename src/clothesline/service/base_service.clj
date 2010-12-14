@@ -91,6 +91,9 @@
 (defn -movedPermanently [self request graphdata]
   (annotated-return false))
 
+(defn -movedTemporarily [self request graphdata]
+  (annotated-return false))
+
 (defn -lastModified [self request graphdata]
   (annotated-return nil))
 

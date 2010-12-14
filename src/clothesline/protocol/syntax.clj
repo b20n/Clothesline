@@ -37,6 +37,12 @@
                                   ;  stops immediately with a processing dump.
 (def *current-state* ::none)
 
+(defn *trace-output-func* [str]
+  (binding [*out* *err*]
+    (println str)))
+
+
+
 (defmacro state [& {:as state-opts}]
   (let [has-body? (:body state-opts)]
     (if-not has-body?
@@ -59,11 +65,15 @@
                          ~(:yes opts)
                          ~(:no opts))
                forward-args# (assoc args# :graphdata ndata#)]
-           (when (or  *debug* (:debug-output graphdata#))
-             (binding [*out* *err*]
-               (println "Intermediate (" ~(:name opts) ")" test-result#)
-               (println "  :: " forward-args#)
-               (println "------------------------------")))
+           (when (or *debug* (:debug-output ndata#))
+             (let [trace-candidates# (list (:debug-output ndata#)
+                                           *trace-output-func*
+                                           identity)
+                   tracefun#         (first (filter fn? trace-candidates#))
+                   outstr#           (str "Intermediate (" ~(:name opts) ") "
+                                          test-result# "\n"
+                                         "  ::  " forward-args# "\n")]
+               (tracefun# outstr#)))
            (cond
             *debug-mode-runone*
                                 forward-args#

@@ -55,7 +55,9 @@
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [previouslyExisted
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
-            [movedPermantently
+            [movedPermanently
+             [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
+            [movedTemporarily
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
             [lastModified
              [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] clothesline.interop.nodetest.TestResult]
