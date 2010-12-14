@@ -87,8 +87,13 @@
 
  (defstate b10
    :test (fn [{:keys [handler request graphdata]}]
-           ((getres (s/allowed-methods handler request graphdata)) 
-            (:request-method request)))
+           (let [[methods ann] (getresann
+                                (s/allowed-methods handler
+                                                   request
+                                                   graphdata))]
+                (annotated-return
+                 (methods (:request-method request))
+                 ann)))
    :yes b9
    :no (stop-response 501))
 
