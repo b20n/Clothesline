@@ -49,23 +49,33 @@
 
 ;; Handlers
 
-;; TODO: Reify.
-(def default-handler nil)
+(def default-handler (reify Object (toString [self] "-- DEFAULT TESTING HANDLER")))
+(extend (class default-handler) cl/service cl/service-default)
+
+(defn testing-handler [& {:as keyvals}]
+  (let [ksvs         (flatten (map #(vector (first %)
+                                            (constantly (second %))) keyvals))
+        newsigs      (apply hash-map ksvs)
+        new-behavior (merge cl/service-default newsigs)
+        res          (reify Object (toString [self] (str "Testing handler. Stubbed: "
+                                                         keyvals)))] 
+    (extend (class res) cl/service new-behavior)
+    res))
 
 ;; Running states
 
 (def *machine-namespace* (find-ns 'clothesline.protocol.graph))
 (defn- find-state [sym]
      (if-let [loc-var (get (ns-publics *machine-namespace*) sym)]
-       sym
+       loc-var
        identity))
 
 (defn- run-state-testing [state-sym args]
   (binding [syntax/*debug-mode-runone* true]
-    (apply (find-state state-sym) args)))
+    (apply (find-state state-sym) (list args))))
 
 (defn test-state [state-sym & {:as args}]
-  (let [default-args {:request (make-request nil)
+  (let [default-args {:request (make-request)
                       :handler default-handler
                       :graphdata {}}]
     (run-state-testing state-sym (merge default-args args))))
