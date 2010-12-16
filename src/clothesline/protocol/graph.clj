@@ -441,15 +441,6 @@
    :no p11)
  
  
- (defstate temp-end
-   :test (constantly (annotated-return false {:annotate {:fart true}
-                                              :headers  {"fart" "true"}}))
-   :yes :respond
-   :no {:status 500, :body "Epic fail."})
-
- (defstate test-fail-state
-   :test (fn [& args] (breakout-of-test 999)))
- 
  ) ; Protocol machine v3.
 
   (def start #'b13)
