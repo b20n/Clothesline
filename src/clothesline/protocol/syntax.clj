@@ -76,7 +76,10 @@
                (tracefun# outstr#)))
            (cond
             *debug-mode-runone*
-                                forward-args#
+            {:result test-result#
+             :forward-args forward-args#
+             :plan plan#
+             :ndata ndata# }
             (map? plan#)
                                 plan#                       ; If it's a map, return it.
             (instance? java.util.concurrent.Callable plan#)
