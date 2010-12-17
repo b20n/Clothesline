@@ -11,5 +11,5 @@
   {:status 200, :headers {}})
 
 (defonce instance
-     (run-jetty #'handle-req { :join? false :port 8333 }))
+  (delay (run-jetty #'handle-req { :join? false :port 8333 })))
 

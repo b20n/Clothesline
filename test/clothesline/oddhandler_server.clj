@@ -13,4 +13,4 @@
 (def example-routes { "/"   (constantly bogus-server)
                       "/:p" (class bogus-server2)})
 
-(defonce *server* (produce-server example-routes {:port 8999 :join? false}))
+(defonce *server* (delay (produce-server example-routes {:port 8999 :join? false})))

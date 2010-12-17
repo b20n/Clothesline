@@ -56,7 +56,7 @@
 ;; Server
 
 
-(defonce *server* (clothesline.core/produce-server {"/:name" (bookmark-handler.)} 
-                                                   {:join? false :port 9001}))
+(defonce *server* (delay (clothesline.core/produce-server {"/:name" (bookmark-handler.)} 
+                                                          {:join? false :port 9001})))
 
 
