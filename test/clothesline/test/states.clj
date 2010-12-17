@@ -5,10 +5,13 @@
    clojure.test))
 
 
-(defn annotation-preserving? [state]
-     (let [tok (gensym)
-           {:keys [forward-args]} (test-state state :graphdata {:token tok})]
-       (= tok (get-in forward-args [:graphdata :token]))))
+(defn annotation-preserving? [state handler-keyword]
+  (let [tok (gensym)
+        generative-handler (testing-handler handler-keyword
+                                            (annotated-return true
+                                                              {:annotate {:token tok}}))
+        {:keys [forward-args]} (test-state state :handler generative-handler)]
+    (is (= tok (get-in forward-args [:graphdata :token])))))
 
 (defn state-res-linked-to-handler-method? [state handler-keyword]
   (let [tst #(getres (:result (test-state state :handler %)))]
@@ -52,4 +55,5 @@
 
 (deftest trivial-state-correctness
   (doseq [[state-sym protocol-sym] trivial-linked-states]
-    (state-res-linked-to-handler-method? state-sym protocol-sym)))
+    (state-res-linked-to-handler-method? state-sym protocol-sym)
+    (annotation-preserving? state-sym protocol-sym)))
