@@ -57,5 +57,6 @@
     (is (nil? (t-helpers/map-accept-header def-request-crd "accept" map1 false)))
     (is (= ["text/html" k1] (t-helpers/map-accept-header def-request-crd "accept" map1)))
     (is (= ["text/html" k1] (t-helpers/map-accept-header def-request-html "accept" map2)))
-    (is (= ["text/xml" k2] (t-helpers/map-accept-header def-request-xml "accept" map2)))))
+    (is (= ["text/xml" k2] (t-helpers/map-accept-header def-request-xml "accept" map2)))
+    (is (= ["*/*"      k1] (t-helpers/map-accept-header def-request-xml "accept" map*)))))
 

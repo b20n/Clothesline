@@ -24,7 +24,7 @@
 (helpers/extend-as-handler time-handler behavior)
 
 ;; Server
-(defonce *server* (clothesline.core/produce-server {"/*" (time-handler.)} 
-                                                   {:join? false :port 9001}))
+(defonce *server* (delay (clothesline.core/produce-server {"/*" (time-handler.)} 
+                                                          {:join? false :port 9001})))
 
 

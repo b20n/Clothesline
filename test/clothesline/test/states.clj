@@ -11,14 +11,15 @@
                                             (annotated-return true
                                                               {:annotate {:token tok}}))
         {:keys [forward-args]} (test-state state :handler generative-handler)]
-    (is (= tok (get-in forward-args [:graphdata :token])))))
+    (is (= tok (get-in forward-args [:graphdata :token])) "preserve annotation")))
 
 
 
 (defn state-res-linked-to-handler-method? [state handler-keyword]
   (let [tst #(getres (:result (test-state state :handler %)))]
-    (is (= (tst (testing-handler handler-keyword false)) false))
-    (is (= (tst (testing-handler handler-keyword true)) true))))
+    (testing "have their result determined solely by a handler call"
+      (is (= (tst (testing-handler handler-keyword false)) false))
+      (is (= (tst (testing-handler handler-keyword true)) true)))))
 
 
 
@@ -56,9 +57,10 @@
       'n5 :allow-missing-post?))
 
 (deftest trivial-state-correctness
-  (doseq [[state-sym protocol-sym] trivial-linked-states]
-    (state-res-linked-to-handler-method? state-sym protocol-sym)
-    (annotation-preserving? state-sym protocol-sym)))
+  (testing "Trivially complex states should "
+    (doseq [[state-sym protocol-sym] trivial-linked-states]
+      (state-res-linked-to-handler-method? state-sym protocol-sym)
+      (annotation-preserving? state-sym protocol-sym))))
 
 (deftest b10-set-accepting
   (is (= true (boolean (:result (test-state 'b10
@@ -68,4 +70,19 @@
   (is (= true (boolean (:result (test-state 'b10
                                             :request {:request-method :options}
                                             :handler (testing-handler :allowed-methods #{:options :get})))))))
+
+
+
+(deftest g11-matches-properly
+  (let [etagzo (fn [etag] (testing-handler :generate-etag etag))
+        hdr1   {:headers {"if-match" "123456"}}
+        hdr2   {:headers {"if-match" "abc123"}}]
+    (testing "g11 should match etags to header values"
+      (is (= true (boolean (getres (:result (test-state 'g11 :request hdr1
+                                                        :handler (testing-handler :generate-etag "123456")))))))
+      (is (= false (boolean (getres (:result (test-state 'g11 :request hdr2
+                                                         :handler (testing-handler :generate-etag "123456"))))))))))
+
+
+
 
