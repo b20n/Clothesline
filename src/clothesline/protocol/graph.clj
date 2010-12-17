@@ -235,7 +235,7 @@
  (defstate g11
    :test (fn [{:keys [request handler graphdata]}]
            (let [if-match-value (hv request "if-match")
-                 [etag ann] (getres (s/generate-etag handler request graphdata))]
+                 [etag ann] (getresann (s/generate-etag handler request graphdata))]
              (annotated-return (= if-match-value etag) ann)))
    :yes h10
    :no (stop-response 412))

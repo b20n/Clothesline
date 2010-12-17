@@ -45,7 +45,8 @@
   (list
    [split-out-timezone (formatter "E, d MMM Y H:m:s")]  ; 1123
    [split-out-timezone (formatter "E, d-MMM-yy H:m:s")]  ; 1036
-   [(juxt identity (constantly "UTC")) (formatter "E MMM  d H:m:s yyyy")])) ; Ansi C
+   [(juxt identity (constantly "UTC")) (formatter "E MMM  d H:m:s yyyy")]  ; Ansi C (sorta)
+   [(juxt identity (constantly "UTC")) (formatter "E MMM d H:m:s yyyy")])) ; Ansi C (sorta)
 
 (defn date-timezone-from-string
   "Attempts to extract a date from a string, using the HTTP 1.1 mandated
