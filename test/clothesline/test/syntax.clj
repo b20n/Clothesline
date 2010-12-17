@@ -2,6 +2,7 @@
   (:use clojure.test
         clothesline.test.test-helpers)
   (:require [clothesline.protocol.graph-helpers :as graph-helpers]
+            [clothesline.protocol.test-helpers :as  t-helpers]
             [clothesline.service :as service]))
 
 (deftest call-on-handler 
@@ -35,3 +36,26 @@
     (is (= (truthy1 example) true))
     (is (= (falsy1  example) false))
     (is (= (falsy2 {:request {}})))))
+
+(deftest map-accept-header
+  (let [def-request-html (assoc-in (make-request)
+                                   [:headers "accept"]
+                                   "text/html")
+        def-request-xml  (assoc-in (make-request)
+                                   [:headers "accept"]
+                                   "text/xml,text/html")
+        def-request-crd  (assoc-in (make-request)
+                                   [:headers "accept"]
+                                   "garbage/larbage")
+        k1   (constantly "k1")
+        k2   (constantly "k2")
+        map1 {"text/html" k1}
+        map2 {"text/html" k1
+              "text/xml"  k2}
+        map* {"*/*"       k1}]
+    (is (= ["text/html" k1] (t-helpers/map-accept-header def-request-xml "accept" map1)))
+    (is (nil? (t-helpers/map-accept-header def-request-crd "accept" map1 false)))
+    (is (= ["text/html" k1] (t-helpers/map-accept-header def-request-crd "accept" map1)))
+    (is (= ["text/html" k1] (t-helpers/map-accept-header def-request-html "accept" map2)))
+    (is (= ["text/xml" k2] (t-helpers/map-accept-header def-request-xml "accept" map2)))))
+

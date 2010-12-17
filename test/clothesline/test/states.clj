@@ -13,6 +13,8 @@
         {:keys [forward-args]} (test-state state :handler generative-handler)]
     (is (= tok (get-in forward-args [:graphdata :token])))))
 
+
+
 (defn state-res-linked-to-handler-method? [state handler-keyword]
   (let [tst #(getres (:result (test-state state :handler %)))]
     (is (= (tst (testing-handler handler-keyword false)) false))
@@ -57,3 +59,13 @@
   (doseq [[state-sym protocol-sym] trivial-linked-states]
     (state-res-linked-to-handler-method? state-sym protocol-sym)
     (annotation-preserving? state-sym protocol-sym)))
+
+(deftest b10-set-accepting
+  (is (= true (boolean (:result (test-state 'b10
+                                            :request {:request-method :get})))))
+  (is  (= true (boolean (:result (test-state 'b10
+                                             :request {:request-method :options})))))
+  (is (= true (boolean (:result (test-state 'b10
+                                            :request {:request-method :options}
+                                            :handler (testing-handler :allowed-methods #{:options :get})))))))
+
