@@ -1,5 +1,6 @@
 (ns clothesline.test.states
   (:use
+   [clj-time.core :only [now date-time]]
    clothesline.protocol.test-helpers
    clothesline.test.test-helpers
    clojure.test))
@@ -20,6 +21,25 @@
     (testing "have their result determined solely by a handler call"
       (is (= (tst (testing-handler handler-keyword false)) false))
       (is (= (tst (testing-handler handler-keyword true)) true)))))
+
+
+(defn produces-graphdata-entry? [state-sym graphdata-key & {:as mods}]
+  (let [d-args {:request (make-request)
+                :handler default-handler
+                :graphdata {:headers {}}}
+        m-args (merge d-args mods)
+        result (apply test-state (list* state-sym (-> m-args seq flatten)))
+        ndata  (:ndata result)]
+    (is (not (nil? (get ndata graphdata-key))))))
+
+(defn produces-headers-entry? [state-sym ^string header-key & {:as mods}]
+  (let [d-args {:request (make-request)
+                :handler default-handler
+                :graphdata {:headers {}}}
+        m-args (merge d-args mods)
+        result (apply test-state (list* state-sym (-> m-args seq flatten)))
+        headers  (-> result :ndata :headers)]
+    (is (not (nil? (get headers header-key))))))
 
 
 
@@ -85,4 +105,23 @@
 
 
 
+(deftest h11-extracts-dates
+  (testing "h11 should extract dates into the graphdata"
+    (let [req (make-request :headers {"if-unmodified-since" "Mon, 05 Jul 2010 01:21:00 UTC"})]
+      (produces-graphdata-entry? 'h11 :if-unmodified-since :request req))))
+
+(deftest h12-logic
+  (testing "h12 should"
+    (let [hdlr (testing-handler :last-modified (now))
+          req (make-request)]
+      (is (= false (getres (:result (test-state 'h12 :request req
+                                                     :handler hdlr
+                                                     :graphdata {:if-unmodified-since (date-time 3050)}))))
+          "return false for new date headers")
+      (is (= true  (getres (:result (test-state 'h12 :request req
+                                                     :handler hdlr
+                                                     :graphdata {:if-unmodified-since (date-time 1950)}))))
+          "return true for old date headers"))))
+    
+  
 
