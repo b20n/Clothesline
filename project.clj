@@ -8,7 +8,7 @@
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
                      [clj-stacktrace "0.2.0"]
                      [lein-clojars "0.5.0-SNAPSHOT"]]
-  :jvm-opts ["-agentlib:jdwp=transport=dt_socket,address=8030,server=y,suspend=n"]
+  ;:jvm-opts ["-agentlib:jdwp=transport=dt_socket,address=8030,server=y,suspend=n"]
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
         clothesline.service.base-service
