@@ -329,8 +329,8 @@
 
  (defstate o20
    :test (fn [{:keys [request handler graphdata]}]
-           (or (:content-provider graphdata)
-               (:body graphdata)))
+           (boolean (or (:content-provider graphdata)
+                        (:body graphdata))))
    :yes o18
    :no (stop-response 204))
 
