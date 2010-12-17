@@ -125,3 +125,55 @@
     
   
 
+(deftest k13-matches-properly
+  (let [handler  (testing-handler :generate-etag "123456")
+        hdr1     {:headers {"if-none-match" "123456"}}
+        hdr2     {:headers {"if-none-match" "abc123"}}]
+    (testing "k13 should match etags to header values"
+      (is (= true (boolean (getres (:result (test-state 'k13
+                                                        :request hdr1
+                                                        :handler handler))))))
+      (is (= false (boolean (getres (:result (test-state 'k13
+                                                         :request hdr2
+                                                         :handler handler)))))))))
+
+
+(deftest l14-extracts-dates
+  (testing "l14 should extract dates into the graphdata"
+    (let [req (make-request :headers {"if-modified-since" "Mon, 05 Jul 2010 01:21:00 UTC"})]
+      (produces-graphdata-entry? 'l14 :if-modified-since :request req))))
+
+(deftest l17-logic
+  (testing "l17 should"
+    (let [hdlr (testing-handler :last-modified (now))
+          req (make-request)]
+      (is (= false (getres (:result (test-state 'l17 :request req
+                                                     :handler hdlr
+                                                     :graphdata {:if-modified-since (date-time 3050)}))))
+          "return false for new date headers")
+      (is (= true  (getres (:result (test-state 'l17 :request req
+                                                     :handler hdlr
+                                                     :graphdata {:if-modified-since (date-time 1950)}))))
+          "return true for old date headers"))))
+
+(deftest o14-placeholder
+  (testing "state o14"
+    (is false "should be tested!!!")))
+
+(deftest o20-selection
+  (testing "o20 should"
+    (let [gd1 {:body "testbody"}
+          gd2 {:some "otherkeys"}]
+      (is (boolean (:result (test-state 'o20 :graphdata gd1))) "return true if there is a body defined.")
+      (is (not (boolean (:result (test-state 'o20 :graphdata gd2)))) "return false if there is no body."))))
+
+(deftest k5-i4-anno
+  (testing "k5 & i4 should create location ehader"
+    (let [handler (testing-handler :moved-permanently? "http://google.com")]
+      (produces-headers-entry? 'k5 "Location" :handler handler)
+      (produces-headers-entry? 'i4 "Location" :handler handler))))
+
+(deftest l5-anno
+  (testing "l5 should create location header"
+    (let [handler (testing-handler :moved-temporarily? "http://google.com")]
+      (produces-headers-entry? 'l5 "Location" :handler handler))))
