@@ -5,6 +5,9 @@
    clothesline.test.test-helpers
    clojure.test))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn annotation-preserving? [state handler-keyword]
   (let [tok (gensym)
@@ -55,6 +58,10 @@
 
                                         ; Special cases
                                         ; l4, k5, l5
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; State tests
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def trivial-linked-states
      (hash-map
@@ -158,7 +165,36 @@
 
 (deftest o14-placeholder
   (testing "state o14"
-    (is false "should be tested!!!")))
+    (testing "preserves annotation."
+      (annotation-preserving? 'o14 :conflict?))
+    (testing "return true with service/conflict is true."
+      (is (= true (getres (:result (test-state 'o14
+                                               :handler (testing-handler :conflict? true)))))))
+    (testing "return 415 if not service/confict is false AND there IS NO salient handler"
+      (let [handler (testing-handler :conflict?              false
+                                     :content-types-accepted {})
+            r (test-state 'o14 :handler handler)]
+        (is (= 415 (:status r)))))
+    (testing "returns false if not service/conflict and there IS salient handler."
+      (let [handler (testing-handler :conflict?              false
+                                     :content-types-accepted {"*/*" (constantly "meat")})
+            r (test-state 'o14 :handler handler)]
+        (is (= false (getres (:result r))))))
+    (testing "creates appropriate graphdata entries on false result."
+      (let [content-type "text/plain"
+            content-generator (constantly "meat")
+            handler (testing-handler :conflict?              false
+                                     :content-types-accepted {content-type content-generator})
+            gd      {:content-type "text/plain",
+                     :headers      {"Content-Type" "text/plain"}}
+            r       (test-state 'o14 :handler handler
+                                     :graphdata gd)
+            result  (:result r)
+            ann     (:ndata r)]
+        (is (= false (getres result)))
+        (is (= content-type (:content-type ann)))
+        (is (= content-generator (:content-provider ann)))))))
+
 
 (deftest o20-selection
   (testing "o20 should"
