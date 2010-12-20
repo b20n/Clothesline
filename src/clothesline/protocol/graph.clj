@@ -16,10 +16,8 @@
 ; It'd be nice if eventually this generated the header we need.
 (defn accept-content-helper [handler request graphdata]
   (let [handlers (getres (s/content-types-accepted handler request graphdata))]
-    (if-let [[type body-handler] (map-accept-header request "content-type" handlers false)]
-      (do        
-        (body-handler request graphdata)
-        true)
+    (if-let [type-bh-pair (map-accept-header graphdata "Content-Type" handlers false)]
+      type-bh-pair
       false)))
 
 ; P3 and O14 both share similar logic, represented here
@@ -29,8 +27,11 @@
         handled?         (when-not conflict?
                            (accept-content-helper handler request graphdata))]
     (cond
-     conflict?    (annotated-return true)
-     handled?     (annotated-return false)
+     conflict?    (annotated-return true (getann conflict-rval))
+     handled?     (annotated-return false (merge-annotations
+                                           (getann conflict-rval)
+                                           {:annotate {:content-provider (handled? 1)
+                                                       :content-type     (handled? 0)}}))
      :unhandled?  (breakout-of-test 415))))
 
  ;; State N11 is something of a bear, unfortuantely. 
