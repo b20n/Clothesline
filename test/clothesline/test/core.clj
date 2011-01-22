@@ -1,4 +1,4 @@
-(ns Clothesline.test.core
+(ns clothesline.test.core
   (:use [clojure.test]))
 
 ;; Currently no action here.
