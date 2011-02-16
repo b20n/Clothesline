@@ -187,6 +187,8 @@ used.
 
 ## Further Work Towards Completeness ##
 
+* There are some outstanding issues the Accept header. If you're having problems with spurious 204s on clients, advise them to set their "Accept" header to exactly the content type they want for now.
+
 * Currently, date-related states in the HTTP graph do not work
 properly.
 
