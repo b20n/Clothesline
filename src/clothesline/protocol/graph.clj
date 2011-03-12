@@ -109,7 +109,6 @@
    :no b8
    :yes (stop-response 400))
 
-
  ;; Authorized?
  (defstate b8
    :test (call-on-handler  s/authorized?)
@@ -155,7 +154,6 @@
    :test (request-header-exists? "accept")
    :yes c4
    :no  d4)
-
 
  ;; Acceptable media type available?
  (defstate c4
@@ -494,7 +492,6 @@
    :test conflict-states-helper
    :yes (stop-response 409)
    :no p11)
-
 
  ) ; Protocol machine v3.
 
