@@ -80,7 +80,7 @@
                                      more))))
 
 (defn update-graphdata-with-anns [graphdata {:keys [annotate headers]}]
-  (-> (or graphdata {}) 
+  (-> (or graphdata {})
       (update-in [:headers] #(merge % (or headers {})))
       (merge (dissoc annotate :headers))))
 
