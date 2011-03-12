@@ -34,7 +34,7 @@
                                                        :content-type     (handled? 0)}}))
      :unhandled?  (breakout-of-test 415))))
 
- ;; State N11 is something of a bear, unfortuantely. 
+ ;; State N11 is something of a bear, unfortuantely.
  (defn n11-helper [{:keys [handler request graphdata]}]
    (let [[is-create? s1-anns] (getresann (s/post-is-create? handler
                                                             request
@@ -75,7 +75,7 @@
    :test (call-on-handler s/service-available?)
    :yes b12
    :no (stop-response 503))
- 
+
  (defstate b12
    :test (constantly true)
    :yes b11
@@ -104,7 +104,7 @@
    :yes (stop-response 400))
 
 
- 
+
  (defstate b8
    :test (call-on-handler  s/authorized?)
    :yes b7
@@ -143,8 +143,8 @@
    :test (request-header-exists? "accept")
    :yes c4
    :no  d4)
- 
- 
+
+
  (defstate c4
    "Map the accept handler through and set it."
    :test (fn [{:keys [handler request graphdata]}]
@@ -243,7 +243,7 @@
 
  (defstate h10
    :test (request-header-exists? "if-unmodified-since")
-   :yes h11 
+   :yes h11
    :no i12)
 
  (defstate h11
@@ -263,7 +263,7 @@
              false))
    :yes (stop-response 412)
    :no  i12)
- 
+
  (defstate i12
    :test (request-header-exists? "if-none-match")
    :yes i13
@@ -277,7 +277,7 @@
 
  (defstate k13
    :test (fn [{:keys [request handler graphdata]}]
-           (let [[v ann] (getresann (s/generate-etag handler request graphdata))] 
+           (let [[v ann] (getresann (s/generate-etag handler request graphdata))]
              (annotated-return (= v (hv request "if-none-match"))
                                ann)))
    :yes j18
@@ -340,7 +340,7 @@
    :yes (stop-response 300)
    :no  (normal-response 200)
    )
- 
+
  (defstate n16
    :test (request-method-is? :post)
    :yes n11
@@ -424,7 +424,7 @@
  (defstate n5
    :test (call-on-handler s/allow-missing-post?)
    :no (stop-response 410)
-   :yes n11) 
+   :yes n11)
 
  (defstate n11
    :test n11-helper
@@ -440,8 +440,8 @@
    :test conflict-states-helper
    :yes (stop-response 409)
    :no p11)
- 
- 
+
+
  ) ; Protocol machine v3.
 
   (def start #'b13)
