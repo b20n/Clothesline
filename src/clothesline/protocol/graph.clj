@@ -96,7 +96,7 @@
                  (methods (:request-method request))
                  ann)))
    :yes b9
-   :no (stop-response 501))
+   :no (stop-response 405))
 
  (defstate b9
    :test (call-on-handler  s/malformed-request?)
