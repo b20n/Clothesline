@@ -70,22 +70,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (protocol-machine
+ ;; Service available?
  (defstate b13
    "Check if service has been made unavailable. Return status 503 if not."
    :test (call-on-handler s/service-available?)
    :yes b12
    :no (stop-response 503))
 
+ ;; Known method?
+ ;; TODO: add :known-methods
  (defstate b12
    :test (constantly true)
    :yes b11
    :no (stop-response 501))
 
+ ;; URI too long?
  (defstate b11
    :test (call-on-handler s/uri-too-long?)
    :no b10
    :yes (stop-response 414))
 
+ ;; Method allowed?
  (defstate b10
    :test (fn [{:keys [handler request graphdata]}]
            (let [[methods ann] (getresann
@@ -98,38 +103,44 @@
    :yes b9
    :no (stop-response 405))
 
+ ;; Malformed?
  (defstate b9
    :test (call-on-handler  s/malformed-request?)
    :no b8
    :yes (stop-response 400))
 
 
-
+ ;; Authorized?
  (defstate b8
    :test (call-on-handler  s/authorized?)
    :yes b7
    :no (stop-response 401))
 
+ ;; Forbidden?
  (defstate b7
    :test (call-on-handler  s/forbidden?)
    :yes (stop-response 403)
    :no  b6)
 
+ ;; Okay Content-* headers?
  (defstate b6
    :test (call-on-handler  s/valid-content-headers?)
    :yes b5
    :no (stop-response 501))
 
+ ;; Known Content-Type?
  (defstate b5
    :test (call-on-handler  s/known-content-type?)
    :yes b4
    :no (stop-response 415))
 
+ ;; Req entity too large?
  (defstate b4
    :test (call-on-handler  s/valid-entity-length?)
    :yes b3
    :no (stop-response 413))
 
+ ;; OPTIONS?
  (defstate b3
    :body (fn [{:keys [handler request graphdata] :as args}]
            (if (= :options (:request-method request))
@@ -139,12 +150,14 @@
                 :headers (getres options-headers)})
              (c3 args))))
 
+ ;; Accept exists?
  (defstate c3
    :test (request-header-exists? "accept")
    :yes c4
    :no  d4)
 
 
+ ;; Acceptable media type available?
  (defstate c4
    "Map the accept handler through and set it."
    :test (fn [{:keys [handler request graphdata]}]
@@ -161,22 +174,26 @@
    :yes d4
    :no  (stop-response 406))
 
+ ;; Accept-Language exists?
  (defstate d4
    :test (request-header-exists? "accept-language")
    :yes d5
    :no  e5)
 
+ ;; Acceptable language available?
  (defstate d5
    "Currently ignored. TODO: Fix me!"
    :test (constantly true)
    :yes e5
    :no  (stop-response 406))
 
+ ;; Accept-Charset exists?
  (defstate e5
    :test (request-header-exists? "accept-charset")
    :yes f6 ; TODO: Re-enable accept-charset!
    :no  f6)
 
+ ;; Acceptable charset available?
  (defstate e6
    "Check and select a supported character set"
    :test (fn [{:keys [handler request graphdata]}]
@@ -190,12 +207,14 @@
    :yes f6
    :no (stop-response 406))
 
+ ;; Accept-Encoding exists?
  (defstate f6
    "Check if accept-encoding header is present"
    :test (request-header-exists? "accept-encoding")
    :yes g7 ; TODO: Re-enable accept-encoding
    :no g7)
 
+ ;; Acceptable encoding available?
  (defstate f7
    :test (fn [{:keys [handler request graphdata]}]
            (let [available-handlers (getres (s/charsets-provided handler
@@ -211,21 +230,24 @@
    :yes g7
    :no (stop-response 406))
 
+ ;; The graph bifurcates significantly here. Taking the path down
+ ;; g8 leads us towards serving a resource. Taking the path down
+ ;; h7 leads towards various failure responses.
+ ;; Resource exists, move towards serving it
+
+  ;; Resource exists?
  (defstate g7
    :test (call-on-handler  s/resource-exists?)
    :yes g8
    :no  h7)
 
-                                        ; The graph bifurcates significantly here. Taking the path down
-                                        ; g8 leads us towards serving a resource. Taking the path down
-                                        ; h7 leads towards various failure responses.
-
-                                        ; Resource exists, move towards serving it
+ ;; If-Match exists?
  (defstate g8
    :test (request-header-exists? "if-match")
    :yes g9
    :no  h10)
 
+ ;; If-Match: * exists?
  (defstate g9
    :test (fn [_ request _]
            (let [if-match-value (get (:headers request) "if-match")]
@@ -233,6 +255,7 @@
    :yes h10
    :no  g11)
 
+ ;; ETag in If-Match?
  (defstate g11
    :test (fn [{:keys [request handler graphdata]}]
            (let [if-match-value (hv request "if-match")
@@ -241,11 +264,13 @@
    :yes h10
    :no (stop-response 412))
 
+ ;; If-Unmodified-Since exists?
  (defstate h10
    :test (request-header-exists? "if-unmodified-since")
    :yes h11
    :no i12)
 
+ ;; If-Unmodified-Since is a valid date?
  (defstate h11
    :test (fn [{request :request}]
            (if-let [date (date-for-request-header request "if-unmodified-since")]
@@ -253,6 +278,7 @@
    :yes h12
    :no i12)
 
+ ;; Last-Modified > If-Unmodified-Since?
  (defstate h12
    :test (fn [{h :handler
                req :request
@@ -264,17 +290,19 @@
    :yes (stop-response 412)
    :no  i12)
 
+ ;; If-None-Match exists?
  (defstate i12
    :test (request-header-exists? "if-none-match")
    :yes i13
    :no l13)
 
-
+ ;; If-None-Match * exists?
  (defstate i13
    :test (request-header-is? "if-none-match" "*")
    :yes j18
    :no k13)
 
+ ;; Etag in If-None-Match?
  (defstate k13
    :test (fn [{:keys [request handler graphdata]}]
            (let [[v ann] (getresann (s/generate-etag handler request graphdata))]
@@ -283,16 +311,20 @@
    :yes j18
    :no l13)
 
+ ;; GET?
+ ;; TODO: HEAD?
  (defstate j18
    :test (request-method-is? :get)
    :yes (stop-response 304)
    :no (stop-response 412))
 
+ ;; If-Modified-Since exists?
  (defstate l13
    :test (request-header-exists? "if-modified-since")
    :yes l14
    :no m16)
 
+ ;; If-Modified-Since is a valid date?
  (defstate l14
    :test (fn [{request :request}]
            (if-let [date (date-for-request-header request "if-modified-since")]
@@ -301,12 +333,14 @@
    :yes l15
    :no m16)
 
+ ;; If-Modified-Since > now?
  (defstate l15
    :test (fn [{{ims-date :if-modified-since :as graphdata} :graphdata}]
            (after? ims-date (now)))
    :yes m16
    :no l17)
 
+ ;; Last-Modified > If-Modified-Since?
  (defstate l17
    :test (fn [{h :handler
                req :request
@@ -318,16 +352,19 @@
    :yes m16
    :no (stop-response 304))
 
+ ;; DELETE?
  (defstate m16
    :test (request-method-is? :delete)
    :no  n16
    :yes m20)
 
+ ;; DELETE enacted immediately?
  (defstate m20
    :test (call-on-handler s/delete-resource)
    :yes o20
    :no (stop-response 202))
 
+ ;; Response includes an entity?
  (defstate o20
    :test (fn [{:keys [request handler graphdata]}]
            (boolean (or (:content-provider graphdata)
@@ -335,22 +372,26 @@
    :yes o18
    :no (stop-response 204))
 
+ ;; Multiple representations?
  (defstate o18
    :test (call-on-handler s/multiple-choices?)
    :yes (stop-response 300)
    :no  (normal-response 200)
    )
 
+ ;; POST?
  (defstate n16
    :test (request-method-is? :post)
    :yes n11
    :no o16)
 
+ ;; PUT?
  (defstate o16
    :test (request-method-is? :put)
    :yes o14
    :no o18)
 
+ ;; Conflict?
  (defstate o14
    :test conflict-states-helper
    :yes (stop-response 409)
@@ -358,21 +399,25 @@
 
  ;; Back up to failure states
 
+ ;; If-Match exists?
  (defstate h7
    :test (request-header-is? "if-match" "*")
    :yes (stop-response 412)
    :no  i7)
 
+ ;; PUT?
  (defstate i7
    :test (request-method-is? :put)
    :yes i4
    :no k7)
 
+ ;; Previously existed?
  (defstate k7
    :test (call-on-handler s/previously-existed?)
    :yes k5
    :no l7)
 
+ ;; Moved permanently?
  (defstate k5
    :test (fn [{:keys [handler request graphdata]}]
            (let [[redirect-to ann] (getresann (s/moved-permanently? handler
@@ -384,6 +429,7 @@
    :yes (normal-response 301)
    :no l5)
 
+ ;; Moved permanently? (apply PUT to different URI)
  (defstate i4
    :test (fn [{:keys [handler request graphdata]}]
            (let [[redirect-to ann] (getresann (s/moved-permanently? handler
@@ -395,6 +441,7 @@
    :yes (normal-response 301)
    :no p3)
 
+ ;; Moved temporarily?
  (defstate l5
    :test (fn [{:keys [handler request graphdata]}]
            (let [[redirect-to ann] (getresann (s/moved-temporarily? handler
@@ -406,36 +453,43 @@
    :yes (normal-response 307)
    :no m5)
 
+ ;; POST?
  (defstate l7
    :test (request-method-is? :post)
    :no (stop-response 404)
    :yes m7)
 
+ ;; Server allows POST to missing resource?
  (defstate m7
    :test (call-on-handler s/allow-missing-post?)
    :yes n11
    :no (stop-response 404))
 
+ ;; POST?
  (defstate m5
    :test (request-method-is? :post)
    :no (stop-response 410)
    :yes n5) ; Identical to m7
 
+ ;; Server allows POST to missing resource?
  (defstate n5
    :test (call-on-handler s/allow-missing-post?)
    :no (stop-response 410)
    :yes n11)
 
+;; Redirect?
  (defstate n11
    :test n11-helper
    :yes (normal-response 303)
    :no p11)
 
+ ;; New resource?
  (defstate p11
    :test (response-header-set? "Location")
    :yes (normal-response 201)
    :no  o20)
 
+ ;; Conflict?
  (defstate p3
    :test conflict-states-helper
    :yes (stop-response 409)
