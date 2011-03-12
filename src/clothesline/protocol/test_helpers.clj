@@ -31,7 +31,7 @@
      (or (first (push-header-through request field map))
          (or  (get-with-key map "*/*") (get-with-key map "*"))
          (when with-default? (first map))))
-  ([request field map] (map-accept-header request field map true)))
+  ([request field map] (map-accept-header request field map false)))
 
 
 (defn date-for-request-header [request header-name]
