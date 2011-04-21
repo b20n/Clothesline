@@ -46,7 +46,10 @@
      (= :get method)
      (-> {}
          (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
-         (assoc-if "Content-Length" (str (count @body)) @body)
+         (assoc-if "Content-Length" (str (cond
+					  (instance? java.io.InputStream @body) (.available @body)
+					  (instance? java.io.File @body) (.length @body)
+					  :else (count @body))) @body)
          (assoc-if "ETag" (str etag-val) etag-val)
          (assoc-if "Last-Modified" (datetime-to-http11-string last-modified-val) last-modified-val)
          (assoc-if "Expires" (datetime-to-http11-string expires-val) expires-val))
