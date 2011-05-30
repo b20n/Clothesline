@@ -76,6 +76,17 @@
 
 
 (defn stop-response
-  ([^int code] {:status code :headers {}})
-  ([^int code headers] {:status code :headers headers})
-  ([^int code headers msg] {:status code :headers headers :body msg}))
+  ([^int code] (fn [{:keys [handler request graphdata]}]
+                 {:status code
+                  :headers (merge {} (:headers graphdata))
+                  :body (bh/produce-body (:body graphdata) request graphdata)}))
+  ([^int code headers] (fn [{:keys [handle request graphdata]}]
+                         {:status code
+                          :headers headers
+                          :body (bh/produce-body (:body graphdata) request graphdata)}))
+  ; The other two handlers produce a function which produces a result, but this
+  ; version of the method doesn't need that indirection. It only does so for uniformity.
+  ([^int code headers body]
+     (fn [_] {:status code :headers headers :body body})))
+
+
