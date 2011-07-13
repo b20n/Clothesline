@@ -1,14 +1,22 @@
 (ns clothesline.protocol.body-helpers
   (:require [clojure.contrib [string :as strs]]
             [clothesline [service :as s]]
-            [clothesline.protocol.test-helpers :as helpers])
-  (:use     [clothesline [util :only [assoc-if take-until]]]))
+            [clothesline.protocol.test-helpers :as helpers]
+	    [clojure.java.io :as io])
+  (:use     [clothesline [util :only [assoc-if take-until]]])
+  (:import (java.io File InputStream FileInputStream ByteArrayOutputStream)))
 
 
 (defn produce-body [body request graphdata]
   (cond
+   (delay? body) body ; Why thank you!    
    (instance? clojure.lang.IFn body) (delay (body request graphdata))
-   :else                             (delay body)))
+   (instance? File body) (with-open [stream (FileInputStream. body)]
+			   (produce-body stream request graphdata))
+   (instance? InputStream body) (delay (let [baos (ByteArrayOutputStream.)]
+					 (io/copy body baos)
+					 (.toByteArray baos)))
+   :else                             (delay body))) ;; For uniformity
 
 (defn default-content-handler [handler request graphdata]
   (let [[ct handler] (first (helpers/getres (s/content-types-provided handler

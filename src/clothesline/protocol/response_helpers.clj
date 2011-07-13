@@ -46,7 +46,10 @@
      (= :get method)
      (-> {}
          (assoc-if "Content-Type" (build-ct-header content-type graphdata) content-type)
-         (assoc-if "Content-Length" (str (count @body)) @body)
+         (assoc-if "Content-Length" (str (cond
+					  (instance? java.io.InputStream @body) (.available @body)
+					  (instance? java.io.File @body) (.length @body)
+					  :else (count @body))) @body)
          (assoc-if "ETag" (str etag-val) etag-val)
          (assoc-if "Last-Modified" (datetime-to-http11-string last-modified-val) last-modified-val)
          (assoc-if "Expires" (datetime-to-http11-string expires-val) expires-val))
@@ -73,6 +76,17 @@
 
 
 (defn stop-response
-  ([^int code] {:status code :headers {}})
-  ([^int code headers] {:status code :headers headers})
-  ([^int code headers msg] {:status code :headers headers :body msg}))
+  ([^int code] (fn [{:keys [handler request graphdata]}]
+                 {:status code
+                  :headers (merge {} (:headers graphdata))
+                  :body @(bh/produce-body (:body graphdata) request graphdata)}))
+  ([^int code headers] (fn [{:keys [handle request graphdata]}]
+                         {:status code
+                          :headers headers
+                          :body @(bh/produce-body (:body graphdata) request graphdata)}))
+  ; The other two handlers produce a function which produces a result, but this
+  ; version of the method doesn't need that indirection. It only does so for uniformity.
+  ([^int code headers body]
+     (fn [_] {:status code :headers headers :body body})))
+
+
