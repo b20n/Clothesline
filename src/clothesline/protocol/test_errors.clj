@@ -1,6 +1,5 @@
 (ns clothesline.protocol.test-errors
-  (:require [clojure.contrib [error-kit :as error]]
-            [clothesline.protocol.syntax]))
+  (:require [clojure.contrib [error-kit :as error]]))
 
 (error/deferror test-breakout-error []
   "When a test precondition is violated, it can throw this exception
