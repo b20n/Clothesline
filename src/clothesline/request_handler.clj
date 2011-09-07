@@ -20,7 +20,7 @@
 (defn no-handler-found [req]
   "Returns a 404 when no appropriate handler was found"
   (-> (response "404 - Resource Not found")
-      (content-type "text-plain")
+      (content-type "text/plain")
       (status 404)))
 
 (defn- match-route [req route handler]
