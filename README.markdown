@@ -48,31 +48,32 @@ something. Clothesline is a way of finding out.
 
 Using the `defsimplehandler` in `clothesline.service.helpers` we can
 quickly make a simple hello-world service:
+```clojure
+(ns example1
+  (:use clothesline.core
+        [clothesline.service.helpers :only [defsimplehandler]])
 
-    (ns example1
-      (:use clothesline.core
-            [clothesline.service.helpers :only [defsimplehandler]])
+;; A default handler that only cares about content-types.
+;;
+;; This not only defines a type, but actually instantiates
+;; example1-server. defsimplehandler is not meant for anything
+;; but the simplest use.
+(defsimplehandler example1-simple
+  "text/plain" (fn [request graphdata] "Hello World."))
 
-    ;; A default handler that only cares about content-types.
-    ;;
-    ;; This not only defines a type, but actually instantiates
-    ;; example1-server. defsimplehandler is not meant for anything
-    ;; but the simplest use.
-    (defsimplehandler example1-simple
-      "text/plain" (fn [request graphdata] "Hello World."))
+;; Request is the ring request, passed through.
+;; graphdata is the accumulated data about the response.
+(defsimplehandler example1-params
+"text/plain" (fn [request graphdata]
+                  (str "Your params: " (:params request))))
+;; A traditional clout routing table. Note the colon-params in the
+;; service are provided and placed in
+(def routes {"/" example1-simple, "/:gratis" example1-params})
 
-    ;; Request is the ring request, passed through.
-    ;; graphdata is the accumulated data about the response.
-    (defsimplehandler example1-params
-    "text/plain" (fn [request graphdata]
-                     (str "Your params: " (:params request))))
-    ;; A traditional clout routing table. Note the colon-params in the
-    ;; service are provided and placed in
-    (def routes {"/" example1-simple, "/:gratis" example1-params})
-
-    ;; This is our server instance:
-    (defonce *server*
-      (produce-server routes {:port 9999 :join? false}))
+;; This is our server instance:
+(defonce *server*
+  (produce-server routes {:port 9999 :join? false}))
+```
 
 `defsimplehandler` is actually a very simple macro. It expands our form
 to the relatively simple handler form that overrides
