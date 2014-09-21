@@ -39,10 +39,11 @@ web frameworks for content delivery, is superb for designing RESTful
 interfaces without having to worry about correctness.
 
 BankSimple's stack is also multi-lingual, using Scala, Clojure, and
-JRuby. It's important for our development efforts to have a plays-well-with-others project where code can be shared between languages. We think that JVM language crosstalk is going to
-be a major asset for us, and increasingly you see other
-companies talking about similar experiments. Maybe we're on to
-something. Clothesline is a way of finding out.
+JRuby. It's important for our development efforts to have a
+plays-well-with-others project where code can be shared between languages. We
+think that JVM language crosstalk is going to be a major asset for us, and
+increasingly you see other companies talking about similar experiments. Maybe
+we're on to something. Clothesline is a way of finding out.
 
 ### A Simple Example ###
 
@@ -55,17 +56,19 @@ quickly make a simple hello-world service:
 
     ;; A default handler that only cares about content-types.
     ;;
-    ;; This not only defines a type, but actually instantiates
-    ;; example1-server. defsimplehandler is not meant for anything
-    ;; but the simplest use.
+    ;; This not only defines a type, but creates a named instance
+    ;; of the object matching the handler name, ready to be used
+    ;; as part of routing.  It is not, however, a classical ring
+    ;; handler - only a Clothesline handler.
     (defsimplehandler example1-simple
       "text/plain" (fn [request graphdata] "Hello World."))
 
     ;; Request is the ring request, passed through.
-    ;; graphdata is the accumulated data about the response.
+    ;; Graphdata is the accumulated data about the response.
     (defsimplehandler example1-params
     "text/plain" (fn [request graphdata]
                      (str "Your params: " (:params request))))
+
     ;; A traditional clout routing table. Note the colon-params in the
     ;; service are provided and placed in
     (def routes {"/" example1-simple, "/:gratis" example1-params})
@@ -74,9 +77,44 @@ quickly make a simple hello-world service:
     (defonce *server*
       (produce-server routes {:port 9999 :join? false}))
 
-`defsimplehandler` is actually a very simple macro. It expands our form
-to the relatively simple handler form that overrides
-`content-types-provided` for that specific instance.
+`defsimplehandler` is actually a very simple macro. It expands our form to the
+relatively simple handler form that overrides `content-types-provided` for
+that specific instance.
+
+### A Not-Quite-So-Simple Example ###
+
+`defsimplehandler` is built on the `defhandler` macro, which wraps the
+standard behaviour of building a new handler instance with the default
+behaviours in place.  A more complex resource is easy to build:
+
+    (ns example1
+      (:use clothesline.core
+            [clothesline.service.helpers :only [defhandler]]
+            [clothesline.protocol.test-helpers :only [annotated-return]]))
+
+    (defhandler hello
+      ;; any request without a "greet" parameter is malformed.
+      ;; also, augment graphdata with that greeting.
+      :malformed-request? (fn [_ {:keys params} _]
+                            (if-let [greeting (params "greet")]
+                               (annotated-return false {:annotate {:greet greeting}})
+                               true))
+      ;; ... mostly defaults.
+      :resource-exists?   (constantly true)
+      :allowed-methods    (constantly #{:get})
+      ;; ...and some content generation functions.
+      :content-types-provided
+        (constantly {"text/html"  fancy-hello
+                     "text/plain" (fn [_ _ graphdata]
+                                     (str "Hello, " (:greet graphdata)))}))
+
+    ;; A traditional clout routing table. Note the colon-params in the
+    ;; service are provided and placed in
+    (def routes {"/:greet" hello})
+
+    ;; This is our server instance:
+    (defonce *server*
+      (produce-server routes {:port 9999 :join? false}))
 
 ## Format of a Handler ##
 
@@ -95,28 +133,33 @@ which use the Erlang Process dictionary to accumulate state,
 Clothesline prefers using annotated return values to allow the
 accumulated state to be arbitrarily extended. To this end, if you wish
 to extend the "graphdata" (Clothesline's name for the extended state)
-you should use the record class defined in
-`clothesline.interop.nodetest`, TestResult. This class contains two
-cells, one is the `:result` cell which should contain your normal
-result value. The other is an `:annotations` cell, which should contain
-a Map. The map respects two keys:
+you should use `clothesline.protocol.test-helpers/annotated-return` to
+augment your response
 
-* annotate: (should contain a dictionary with Clojure keyword
-  keys). Any key placed in this
-  dictionary will be carried over to the graphdata as request. See
-  later in the documentation for some keys of interest for annotation.
-* headers: (should contain a dictionary of string to string). This
-  dictionary will be appended to the graphdata response headers
-  outside of the normal HTTP logic, in
-  `(:headers graphdata)`. The most common header values to insert are
-  responses like "Location".
+That expands to the record class defined in `clothesline.interop.nodetest`,
+`TestResult`. This class contains two cells, one is the `:result` cell which
+should contain your normal result value. The other is an `:annotations` cell,
+which should contain a Map. The map respects two keys:
+
+* `annotate`: (should contain a dictionary with Clojure keyword keys).
+  Any key placed in this dictionary will be available in the graphdata
+  as subsequent handlers are called.  Later in the documentation for
+  some keys of interest for annotation.
+
+* `headers`: (should contain a dictionary of string to string).
+  This dictionary will be appended to the final set of response headers,
+  in addition to the normal HTTP logic. The most common header to insert
+  here would be `"Location"`.
 
 -----
-Please note that some common headers such as Content-Length and
-Content-Type should be automatically generated for you, unless your
-handler is unusual. Content-Length, in particular, can be disastrous
-to modify since most browsers hang  when confronted with an
-over-large Content-Length header.
+
+Please note that some common headers such as `Content-Length`, and
+`Content-Type` should be automatically generated for you, unless your handler
+is *extremely* unusual. `Content-Length`, in particular, can be disastrous to
+modify since most browsers hang when confronted with an over-large
+`Content-Length` header.
+
+Augment, don't replace, standard HTTP headers in your handlers.
 
 -----
 
@@ -143,12 +186,12 @@ higher code re-usability and a cleaner, clearer architecture.
 
 There are a few key departures from WebMachine's model that should be
 noted. The most obvious is the content-types-provided and
-content-types-accepted. These are maps of content-type-string to
-function, but the functions are different. They *must* take two
-arguments: the ring request and the current graphdata. The *must*
-return a simple string or a function that evaluates to a simple string.
-There are plans to allow for other return types (in particular: threads, streams, delay and future objects,
-etc), but they are currently not supported.
+content-types-accepted. These are maps of content-type-string to function, but
+the functions are different. They *must* take two arguments: the ring request
+and the current graphdata. The *must* return a simple string or a function
+that evaluates to a simple string.  There are plans to allow for other return
+types (in particular: threads, streams, delay and future objects, etc), but
+they are currently not supported.
 
 `allowed-methods` should return a Set as opposed to a List.
 
@@ -160,13 +203,12 @@ etc), but they are currently not supported.
 Annotation keys are stored in the graphdata structure, which is passed
 amongst states and passed to every handler test.
 
-The graphdata structure contain annotations and the sum of the headers
-that should be explicitly added. These values can be directly
-specified with annotations. If a test called later in the graph specifies a value that
-contradicts an earlier value, the later specification overrides the
-earlier one. It is important to note that these values are special,
-but not the only allowed values. *Any key and value is a valid
-annotation!*
+The graphdata structure contain annotations and the sum of the headers that
+should be explicitly added. These values can be directly specified with
+annotations. If a test called later in the graph specifies a value that
+contradicts an earlier value, the later specification overrides the earlier
+one. It is important to note that these values are special, but not the only
+allowed values. *Any key and value is a valid annotation!*
 
 `:headers` This is a string-string map of header values. Please note
 that headers are case-sensitive. The headers map is used by the graph
@@ -187,13 +229,14 @@ used.
 
 ## Further Work Towards Completeness ##
 
-* There are some outstanding issues the Accept header. If you're having problems with spurious 204s on clients, advise them to set their "Accept" header to exactly the content type they want for now.
+* There are some outstanding issues the Accept header. If you're having
+  problems with spurious 204s on clients, advise them to set their "Accept"
+  header to exactly the content type they want for now.
 
-* Currently, date-related states in the HTTP graph do not work
-properly.
+* Currently, date-related states in the HTTP graph do not work properly.
 
 * Encoding and charset changes also do not work correctly. All charsets
-should be utf-8 for now.
+  should be utf-8 for now.
 
 * Data from `content-types-provided` and `content-types-accepted` is
   not checked during header generation.
@@ -224,7 +267,6 @@ default behaviors that the default protocol provides.
 
 ## Installation
 
-You struggle through for now with a hand-managed jar. Soon we'll have
-a BankSimple open source Maven Repo and we'll make sure to have an
-entry in Clojars.
+You can grab ClothesLine from [CloJars](http://clojars.org/search?q=clothesline)
+using your favorite tool.  Leinengein works well enough.
 
