@@ -5,9 +5,7 @@
                  [clout "0.3.1"]
                  [ring "0.3.1"]
                  [clj-time "0.2.0-SNAPSHOT"]]
-  :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
-                     [clj-stacktrace "0.2.0"]
-                     [lein-clojars "0.5.0-SNAPSHOT"]]
+  :dev-dependencies [[clj-stacktrace "0.2.0"]]
   ;:jvm-opts ["-agentlib:jdwp=transport=dt_socket,address=8030,server=y,suspend=n"]
   :aot [clothesline.interop.nodetest
         clothesline.interop.iservice
